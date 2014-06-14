@@ -16,26 +16,26 @@ Please enjoy this free script!
 
 
 USAGE EXAMPLE:
-File: createthumb.php
-Example: <img src="createthumb.php?filename=photo.jpg&amp;width=100&amp;height=100">
+File: createsmall.php
+Example: <img src="createsmall.php?filename=photo.jpg&amp;width=100&amp;height=100">
 */
 //  error_reporting(E_ALL);
 
-function create_thumb($filename, $outfile, $size = 120) {
+function create_thumb($filename, $outfile, $size = 1024) {
     // Define variables
     $target = "";
-    $xoord = 0;
-    $yoord = 0;
+    $height = $size;
+    $width = $size;
 
-    $imgsize = GetImageSize($filename);
-    $width = $imgsize[0];
-    $height = $imgsize[1];
-    if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
-        $xoord = ceil(($width-$height)/2);
-        $width = $height;      // Then we read a square frame that  equals the width
+    // Get new dimensions
+    list($width_orig, $height_orig) = getimagesize($filename);
+
+    $ratio_orig = $width_orig/$height_orig;
+
+    if ($width/$height > $ratio_orig) {
+       $width = $hight*$ratio_orig;
     } else {
-        $yoord = ceil(($height-$width)/2);
-        $height = $width;
+       $height = $width/$ratio_orig;
     }
 
     // Rotate JPG pictures
@@ -56,11 +56,11 @@ function create_thumb($filename, $outfile, $size = 120) {
         }
     }
 
-    $target = ImageCreatetruecolor($size,$size);
+    $target = ImageCreatetruecolor($width,$height);
     if (preg_match("/.jpg$|.jpeg$/i", $filename)) $source = ImageCreateFromJPEG($filename);
     if (preg_match("/.gif$/i", $filename)) $source = ImageCreateFromGIF($filename);
     if (preg_match("/.png$/i", $filename)) $source = ImageCreateFromPNG($filename);
-    imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
+    imagecopyresampled($target, $source, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
     imagedestroy($source);
 
     if (preg_match("/.jpg$|.jpeg$/i", $filename)) ImageJPEG($target,$outfile,90);
@@ -101,18 +101,18 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
 
 // Create paths for different picture versions
 $md5sum = md5($_GET['filename']);
-$thumbnail = "thumbnails/" . $md5sum;
+$small = "small/" . $md5sum;
 
 
-if (!is_file($thumbnail)) {
-    create_thumb($_GET['filename'], $thumbnail, $_GET['size']);
+if (!is_file($small)) {
+    create_thumb($_GET['filename'], $small, $_GET['size']);
 }
 
 if ( $cleanext == 'jpeg' || $cleanext == 'png') {
-    $img = ImageCreateFromJPEG($thumbnail);
+    $img = ImageCreateFromJPEG($small);
     ImageJPEG($img,null,90);
 } else if ( $cleanext == 'gif') {
-    $img = ImageCreateFromGIF($thumbnail);
+    $img = ImageCreateFromGIF($small);
     ImageGIF($img,null,90);
 } else {
     $img = ImageCreateFromJPEG('images/cannotopen.jpg');
