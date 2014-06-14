@@ -206,9 +206,10 @@ if (file_exists($currentdir ."/captions.txt"))
                     // JPG, GIF and PNG
                     if (preg_match("/.jpg$|.gif$|.png$/i", $file))
                     {
+                        $img_captions[$file] .= "<a href=\"createsmall.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size\">small</a>&nbsp;\n";
+                        $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
                         //Read EXIF
-                        if ($display_exif == 1) $img_captions[$file] .= readEXIF($currentdir . "/" . $file);
-
+                        if ($display_exif == 1) $img_captions[$file] .= "<br />" .readEXIF($currentdir . "/" . $file);
                         checkpermissions($currentdir . "/" . $file);
                         $files[] = array (
                             "name" => $file,
