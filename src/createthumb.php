@@ -21,24 +21,39 @@ Example: <img src="createthumb.php?filename=photo.jpg&amp;width=100&amp;height=1
 */
 //	error_reporting(E_ALL);
 
-if (preg_match("/.jpg$|.jpeg$/i", $_GET['filename'])) header('Content-type: image/jpeg');
-if (preg_match("/.gif$/i", $_GET['filename'])) header('Content-type: image/gif');
-if (preg_match("/.png$/i", $_GET['filename'])) header('Content-type: image/png');
+$_GET['filename'] = "./" . $_GET['filename'];
 
-	// Display error image if file isn't found
-	if (!is_file($_GET['filename'])) {
-		header('Content-type: image/jpeg');
-		$errorimage = ImageCreateFromJPEG('images/questionmark.jpg');
-		ImageJPEG($errorimage,null,90);
-	}
+// Display error image if file isn't found
+if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
+	header('Content-type: image/jpeg');
+	$errorimage = ImageCreateFromJPEG('images/questionmark.jpg');
+	ImageJPEG($errorimage,null,90);
+	exit;
+}
 	
-	// Display error image if file exists, but can't be opened
-	if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['filename']))) < 4 OR substr(decoct(fileperms($_GET['filename'])), -3,1) < 4) {
-		header('Content-type: image/jpeg');
-		$errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
-		ImageJPEG($errorimage,null,90);
-	}
-	
+// Display error image if file exists, but can't be opened
+if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['filename']))) < 4 OR substr(decoct(fileperms($_GET['filename'])), -3,1) < 4) {
+	header('Content-type: image/jpeg');
+	$errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
+	ImageJPEG($errorimage,null,90);
+	exit;
+}
+
+$_GET['size']=filter_var($_GET['size'], FILTER_VALIDATE_INT);
+if ($_GET['size'] == false) $_GET['size'] = 120;
+
+if (preg_match("/\.mp4$|\.mts$|\.mov$|\.m4v$|\.m4a$|\.aiff$|\.avi$|\.caf$|\.dv$|\.qtz$|\.flv$/i", $_GET['filename'])) {
+	header('Content-type: image/jpeg');
+
+	passthru ("ffmpegthumbnailer -i " . escapeshellarg($_GET['filename']) . " -o - -s " . escapeshellarg($_GET['size']) . " -c jpeg -a -f");
+
+	exit;
+}
+
+if (preg_match("/\.jpg$|\.jpeg$/i", $_GET['filename'])) header('Content-type: image/jpeg');
+if (preg_match("/\.gif$/i", $_GET['filename'])) header('Content-type: image/gif');
+if (preg_match("/\.png$/i", $_GET['filename'])) header('Content-type: image/png');
+
 	// Define variables
 	$target = "";
 	$xoord = 0;
@@ -57,7 +72,7 @@ if (preg_match("/.png$/i", $_GET['filename'])) header('Content-type: image/png')
       }
 
     // Rotate JPG pictures
-    if (preg_match("/.jpg$|.jpeg$/i", $_GET['filename'])) {
+    if (preg_match("/\.jpg$|\.jpeg$/i", $_GET['filename'])) {
 		if (function_exists('exif_read_data') && function_exists('imagerotate')) {
 			$exif = exif_read_data($_GET['filename']);
 			$ort = $exif['IFD0']['Orientation'];
@@ -74,19 +89,22 @@ if (preg_match("/.png$/i", $_GET['filename'])) header('Content-type: image/png')
 			if ($degrees != 0)	$target = imagerotate($target, $degrees, 0);
 		}
 	}
-	
+
+
          $target = ImageCreatetruecolor($_GET['size'],$_GET['size']);
-         if (preg_match("/.jpg$/i", $_GET['filename'])) $source = ImageCreateFromJPEG($_GET['filename']);
-         if (preg_match("/.gif$/i", $_GET['filename'])) $source = ImageCreateFromGIF($_GET['filename']);
-         if (preg_match("/.png$/i", $_GET['filename'])) $source = ImageCreateFromPNG($_GET['filename']);
+         if (preg_match("/\.jpg$/i", $_GET['filename'])) $source = ImageCreateFromJPEG($_GET['filename']);
+         if (preg_match("/\.gif$/i", $_GET['filename'])) $source = ImageCreateFromGIF($_GET['filename']);
+         if (preg_match("/\.png$/i", $_GET['filename'])) $source = ImageCreateFromPNG($_GET['filename']);
+
+	 if (!$source) $source = ImageCreateFromJPEG('images/questionmark.jpg');
+
          imagecopyresampled($target,$source,0,0,$xoord,$yoord,$_GET['size'],$_GET['size'],$width,$height);
 		 imagedestroy($source);
 
-         if (preg_match("/.jpg$/i", $_GET['filename'])) ImageJPEG($target,null,90);
-         if (preg_match("/.gif$/i", $_GET['filename'])) ImageGIF($target,null,90);
-         if (preg_match("/.png$/i", $_GET['filename'])) ImageJPEG($target,null,90); // Using ImageJPEG on purpose
+         if (preg_match("/\.jpg$/i", $_GET['filename'])) ImageJPEG($target,null,90);
+         if (preg_match("/\.gif$/i", $_GET['filename'])) ImageGIF($target,null,90);
+         if (preg_match("/\.png$/i", $_GET['filename'])) ImageJPEG($target,null,90); // Using ImageJPEG on purpose
          imagedestroy($target);
-
 
 
 ?>
