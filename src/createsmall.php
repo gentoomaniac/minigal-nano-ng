@@ -17,7 +17,7 @@ Please enjoy this free script!
 
 USAGE EXAMPLE:
 File: createsmall.php
-Example: <img src="createsmall.php?filename=photo.jpg&amp;width=100&amp;height=100">
+Example: <img src="createsmall.php?filename=photo.jpg&amp;size=100">
 */
 //  error_reporting(E_ALL);
 
@@ -39,7 +39,7 @@ function create_thumb($filename, $outfile, $size = 1024) {
     }
 
     // Rotate JPG pictures
-    if (preg_match("/.jpg$|.jpeg$/i", $filename)) {
+    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) {
         if (function_exists('exif_read_data') && function_exists('imagerotate')) {
             $exif = exif_read_data($filename);
             $ort = $exif['IFD0']['Orientation'];
@@ -57,36 +57,24 @@ function create_thumb($filename, $outfile, $size = 1024) {
     }
 
     $target = ImageCreatetruecolor($width,$height);
-    if (preg_match("/.jpg$|.jpeg$/i", $filename)) $source = ImageCreateFromJPEG($filename);
-    if (preg_match("/.gif$/i", $filename)) $source = ImageCreateFromGIF($filename);
-    if (preg_match("/.png$/i", $filename)) $source = ImageCreateFromPNG($filename);
+    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) $source = ImageCreateFromJPEG($filename);
+    if (preg_match("/\.gif$/i", $filename)) $source = ImageCreateFromGIF($filename);
+    if (preg_match("/\.png$/i", $filename)) $source = ImageCreateFromPNG($filename);
     imagecopyresampled($target, $source, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
     imagedestroy($source);
 
-    if (preg_match("/.jpg$|.jpeg$/i", $filename)) ImageJPEG($target,$outfile,90);
-    if (preg_match("/.gif$/i", $filename)) ImageGIF($target,$outfile,90);
-    if (preg_match("/.png$/i", $filename)) ImageJPEG($target,$outfile,90); // Using ImageJPEG on purpose
+    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) ImageJPEG($target,$outfile,90);
+    if (preg_match("/\.gif$/i", $filename)) ImageGIF($target,$outfile,90);
+    if (preg_match("/\.png$/i", $filename)) ImageJPEG($target,$outfile,90); // Using ImageJPEG on purpose
     imagedestroy($target);
 }
 
-
-$extension = preg_replace('.*\.\w*$', '', $_GET['filename']);
-
-if (preg_match("/.jpg$|.jpeg$/i", $_GET['filename'])) {
-    header('Content-type: image/jpeg');
-    $cleanext = 'jpeg';
-}
-if (preg_match("/.gif$/i", $_GET['filename'])) {
-    header('Content-type: image/gif');
-    $cleanext = 'gif';
-}
-if (preg_match("/.png$/i", $_GET['filename'])) {
-    header('Content-type: image/png');
-    $cleanext = 'png';
-}
+$_GET['filename'] = "./" . $_GET['filename'];
+$_GET['size']=filter_var($_GET['size'], FILTER_VALIDATE_INT);
+if ($_GET['size'] == false) $_GET['size'] = 1024;
 
 // Display error image if file isn't found
-if (!is_file($_GET['filename'])) {
+if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/questionmark.jpg');
     ImageJPEG($errorimage,null,90);
@@ -99,16 +87,27 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
     ImageJPEG($errorimage,null,90);
 }
 
+$extension = preg_replace('.*\.\w*$', '', $_GET['filename']);
+
+if (preg_match("/\.jpg$|\.jpeg|\.png$$/i", $_GET['filename'])) {
+    header('Content-type: image/jpeg');
+    $cleanext = 'jpeg';
+}
+if (preg_match("/\.gif$/i", $_GET['filename'])) {
+    header('Content-type: image/gif');
+    $cleanext = 'gif';
+}
+
 // Create paths for different picture versions
 $md5sum = md5($_GET['filename']);
-$small = "small/" . $md5sum;
+$small = "small/" . $md5sum . "_" . $size . "." . $cleanext;
 
 
 if (!is_file($small)) {
     create_thumb($_GET['filename'], $small, $_GET['size']);
 }
 
-if ( $cleanext == 'jpeg' || $cleanext == 'png') {
+if ( $cleanext == 'jpeg') {
     $img = ImageCreateFromJPEG($small);
     ImageJPEG($img,null,90);
 } else if ( $cleanext == 'gif') {

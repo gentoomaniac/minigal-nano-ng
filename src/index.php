@@ -32,7 +32,7 @@ Please enjoy this free script!
 */
 
 $version = "0.3.5";
-ini_set("memory_limit","256M");
+ini_set("memory_limit","512M");
 
 require("config_default.php");
 include("config.php");
@@ -70,8 +70,8 @@ function is_directory($filepath) {
 function padstring($name, $length) {
     global $label_max_length;
     if (!isset($length)) $length = $label_max_length;
-    if (strlen($name) > $length) {
-      return substr($name,0,$length) . "...";
+    if (mb_strlen($name) > $length) {
+      return mb_substr($name,0,$length) . "...";
    } else return $name;
 }
 function getfirstImage($dirname) {
@@ -81,8 +81,8 @@ function getfirstImage($dirname) {
     {
         while(false !== ($file = readdir($handle)))
         {
-            $lastdot = strrpos($file, '.');
-            $extension = substr($file, $lastdot + 1);
+            $lastdot = mb_strrpos($file, '.');
+            $extension = mb_substr($file, $lastdot + 1);
             if ($file[0] != '.' && in_array($extension, $ext)) break;
         }
         $imageName = $file;
@@ -110,17 +110,17 @@ function readEXIF($file) {
 
         $exif_date = exif_read_data ($file,'IFD0' ,0 );
         $edate = $exif_date['DateTime'];
-        if (strlen($emodel) > 0 OR strlen($efocal) > 0 OR strlen($eexposuretime) > 0 OR strlen($efnumber) > 0 OR strlen($eiso) > 0) $exif_data .= "::";
-        if (strlen($emodel) > 0) $exif_data .= "$emodel";
+        if (mb_strlen($emodel) > 0 OR mb_strlen($efocal) > 0 OR mb_strlen($eexposuretime) > 0 OR mb_strlen($efnumber) > 0 OR mb_strlen($eiso) > 0) $exif_data .= "::";
+        if (mb_strlen($emodel) > 0) $exif_data .= "$emodel";
         if ($efocal > 0) $exif_data .= " | $efocal" . "mm";
-        if (strlen($eexposuretime) > 0) $exif_data .= " | $eexposuretime" . "s";
+        if (mb_strlen($eexposuretime) > 0) $exif_data .= " | $eexposuretime" . "s";
         if ($efnumber > 0) $exif_data .= " | f$efnumber";
-        if (strlen($eiso) > 0) $exif_data .= " | ISO $eiso";
+        if (mb_strlen($eiso) > 0) $exif_data .= " | ISO $eiso";
         return($exif_data);
 }
 function checkpermissions($file) {
     global $messages;
-    if (substr(decoct(fileperms($file)), -1, strlen(fileperms($file))) < 4 OR substr(decoct(fileperms($file)), -3,1) < 4) $messages = "At least one file or folder has wrong permissions. Learn how to <a href='http://minigal.dk/faq-reader/items/how-do-i-change-file-permissions-chmod.html' target='_blank'>set file permissions</a>";
+    if (mb_substr(decoct(fileperms($file)), -1, mb_strlen(fileperms($file))) < 4 OR mb_substr(decoct(fileperms($file)), -3,1) < 4) $messages = "At least one file or folder has wrong permissions. Learn how to <a href='http://minigal.dk/faq-reader/items/how-do-i-change-file-permissions-chmod.html' target='_blank'>set file permissions</a>";
 }
 
 //-----------------------
@@ -129,12 +129,13 @@ function checkpermissions($file) {
 if (ini_get('allow_url_fopen') == "1") {
     $file = @fopen ("http://www.minigal.dk/minigalnano_version.php", "r");
     $server_version = fgets ($file, 1024);
-    if (strlen($server_version) == 5 ) { //If string retrieved is exactly 5 chars then continue
+    if (mb_strlen($server_version) == 5 ) { //If string retrieved is exactly 5 chars then continue
         if (version_compare($server_version, $version, '>')) $messages = "MiniGal Nano $server_version is available! <a href='http://www.minigal.dk/minigal-nano.html' target='_blank'>Get it now</a>";
     }
     fclose($file);
 }
 
+mb_internal_encoding("UTF-8");
 if (!defined("GALLERY_ROOT")) define("GALLERY_ROOT", "");
 $thumbdir = rtrim('photos' . "/" .$_REQUEST["dir"],"/");
 $thumbdir = str_replace("/..", "", $thumbdir); // Prevent looking at any up-level folders
@@ -152,7 +153,7 @@ $dirs = array();
 // 1. LOAD FOLDERS
         if (is_directory($currentdir . "/" . $file))
             {
-                if ($file != "." && $file != ".." )
+                if ($file != "." && $file != ".." && mb_substr($file, 0, 1) != ".")
                 {
                     checkpermissions($currentdir . "/" . $file); // Check for correct file permission
                     // Set thumbnail to folder.jpg if found:
@@ -177,7 +178,7 @@ $dirs = array();
                             $dirs[] = array(
                                 "name" => $file,
                                 "date" => filemtime($currentdir . "/" . $file),
-                                "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" . strtolower($folder_color) . ".png' width='$thumb_size' height='$thumb_size' alt='$label_loading' /></a></li>");
+                                "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" . mb_strtolower($folder_color) . ".png' width='$thumb_size' height='$thumb_size' alt='$label_loading' /></a></li>");
                         }
                     }
                 }
@@ -201,7 +202,7 @@ if (file_exists($currentdir ."/captions.txt"))
 }
 
 // 3. LOAD FILES
-                if ($file != "." && $file != ".." && $file != "folder.jpg")
+                if ($file != "." && $file != ".." && $file != "folder.jpg" && mb_substr($file, 0, 1) != ".")
                 {
                     // JPG, GIF and PNG
                     if (preg_match("/.jpg$|.gif$|.png$/i", $file))
@@ -216,6 +217,17 @@ if (file_exists($currentdir ."/captions.txt"))
                             "date" => filemtime($currentdir . "/" . $file),
                             "size" => filesize($currentdir . "/" . $file),
                             "html" => "<li><a href='createsmall.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "createthumb.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size' alt='$label_loading' /></a></li>");
+                    }
+                    // MP4
+                    else if (preg_match("/.mp4$/i", $file))
+                    {
+                        $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
+                        checkpermissions($currentdir . "/" . $file);
+                        $files[] = array (
+                            "name" => $file,
+                            "date" => filemtime($currentdir . "/" . $file),
+                            "size" => filesize($currentdir . "/" . $file),
+                            "html" => "<li><a href='" . $currentdir . "/" . $file . "&amp;size=$small_size' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "createthumb.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size' alt='$label_loading' /></a></li>");
                     }
                     // Other filetypes
                     $extension = "";
@@ -249,10 +261,10 @@ if (sizeof($dirs) > 0)
     foreach ($dirs as $key => $row)
     {
         if($row["name"] == "") unset($dirs[$key]); //Delete empty array entries
-        $name[$key] = strtolower($row['name']);
-        $date[$key] = strtolower($row['date']);
+        $name[$key] = mb_strtolower($row['name']);
+        $date[$key] = mb_strtolower($row['date']);
     }
-    if (strtoupper($sortdir_folders) == "DESC") array_multisort($$sorting_folders, SORT_DESC, $name, SORT_DESC, $dirs);
+    if (mb_strtoupper($sortdir_folders) == "DESC") array_multisort($$sorting_folders, SORT_DESC, $name, SORT_DESC, $dirs);
     else array_multisort($$sorting_folders, SORT_ASC, $name, SORT_ASC, $dirs);
 }
 if (sizeof($files) > 0)
@@ -260,11 +272,11 @@ if (sizeof($files) > 0)
     foreach ($files as $key => $row)
     {
         if($row["name"] == "") unset($files[$key]); //Delete empty array entries
-        $name[$key] = strtolower($row['name']);
-        $date[$key] = strtolower($row['date']);
-        $size[$key] = strtolower($row['size']);
+        $name[$key] = mb_strtolower($row['name']);
+        $date[$key] = mb_strtolower($row['date']);
+        $size[$key] = mb_strtolower($row['size']);
     }
-    if (strtoupper($sortdir_files) == "DESC") array_multisort($$sorting_files, SORT_DESC, $name, SORT_ASC, $files);
+    if (mb_strtoupper($sortdir_files) == "DESC") array_multisort($$sorting_files, SORT_DESC, $name, SORT_ASC, $files);
     else array_multisort($$sorting_files, SORT_ASC, $name, SORT_ASC, $files);
 }
 

@@ -95,13 +95,13 @@ var Mediabox;
 				bgcolor: '#000000',			// Background color, used for flash and QT media
 				wmode: 'opaque',			// Background setting for Adobe Flash ('opaque' and 'transparent' are most common)
 //			NonverBlaster
-				useNB: true,				// use NonverBlaster (true) or JW Media Player (false) for .flv and .mp4 files
-				playerpath: '/js/NonverBlaster.swf',	// Path to NonverBlaster.swf
+				useNB: false,				// use NonverBlaster (true) or JW Media Player (false) for .flv and .mp4 files
+				playerpath: 'NonverBlaster.swf',	// Path to NonverBlaster.swf
 				controlColor: '0xFFFFFF',	// set the controlbar color
 				controlBackColor: '0x000000',	// set the controlbar color
 				showTimecode: 'false',		// turn timecode display off or on
 //			JW Media Player settings and options
-				JWplayerpath: '/js/player.swf',	// Path to the mediaplayer.swf or flvplayer.swf file
+				JWplayerpath: 'player.swf',	// Path to the mediaplayer.swf or flvplayer.swf file
 				backcolor:	'000000',		// Base color for the controller, color name / hex value (0x000000)
 				frontcolor: '999999',		// Text and button color for the controller, color name / hex value (0x000000)
 				lightcolor: '000000',		// Rollover color for the controller, color name / hex value (0x000000)
@@ -345,6 +345,21 @@ var Mediabox;
 				preload = new Image();
 				preload.onload = startEffect;
 				preload.src = URL;
+// HTML5 Video
+			} else if (URL.match(/\.mts|\.mp4|\.avi/i)) {
+				mediaType = 'video';
+				mediaWidth = mediaWidth || options.defaultWidth;
+				mediaHeight = mediaHeight || options.defaultHeight;
+				mediaId = "mediaId_"+new Date().getTime();	// Safari may not update iframe content with a static id.
+				preload = new Element('video', {
+					'src': URL,
+					'id': mediaId,
+					'width': mediaWidth,
+					'height': mediaHeight,
+					'frameborder': 0,
+					'controls': 1
+					});
+				startEffect();
 // FLV, MP4
 			} else if (URL.match(/\.flv|\.mp4/i) || mediaType == 'video') {
 				mediaType = 'obj';
@@ -358,7 +373,7 @@ var Mediabox;
 					params: {wmode: options.wmode, bgcolor: options.bgcolor, allowscriptaccess: options.scriptaccess, allowfullscreen: options.fullscreen}
 					});
 				} else {
-				preload = new Swiff(''+options.JWplayerpath+'?file='+URL+'&backcolor='+options.backcolor+'&frontcolor='+options.frontcolor+'&lightcolor='+options.lightcolor+'&screencolor='+options.screencolor+'&autostart='+options.autoplay+'&controlbar='+options.controlbar, {
+				preload = new Swiff(''+options.JWplayerpath+'?v1.3.5&skin=mySkin.swf&video='+encodeURI(URL), {
 					id: 'MediaboxSWF',
 					width: mediaWidth,
 					height: mediaHeight,
@@ -384,7 +399,8 @@ var Mediabox;
 					params: {wmode: options.wmode, bgcolor: options.bgcolor, allowscriptaccess: options.scriptaccess, allowfullscreen: options.fullscreen}
 					});
 				} else {
-				preload = new Swiff(''+options.JWplayerpath+'?file='+URL+'&backcolor='+options.backcolor+'&frontcolor='+options.frontcolor+'&lightcolor='+options.lightcolor+'&screencolor='+options.screencolor+'&autostart='+options.autoplay, {
+//				preload = new Swiff(''+options.JWplayerpath+'?file='+URL+'&backcolor='+options.backcolor+'&frontcolor='+options.frontcolor+'&lightcolor='+options.lightcolor+'&screencolor='+options.screencolor+'&autostart='+options.autoplay, {
+				preload = new Swiff(''+options.JWplayerpath+'?v1.3.5&skin=mySkin.swf&video='+encodeURI(URL), {
 					id: 'MediaboxSWF',
 					width: mediaWidth,
 					height: mediaHeight,
@@ -883,6 +899,9 @@ var Mediabox;
 			image.setStyles({backgroundImage: "none", display: ""});
 			image.set('html', preload);
 		} else if (mediaType == "url") {
+			image.setStyles({backgroundImage: "none", display: ""});
+			preload.inject(image);
+		} else if (mediaType == "video") {
 			image.setStyles({backgroundImage: "none", display: ""});
 			preload.inject(image);
 		} else {
