@@ -1,6 +1,9 @@
 <?php
 ini_set("memory_limit","512M");
 
+require("config_default.php");
+include("config.php");
+
 $exif = "No";
 $gd = "No";
 $update = "No";
@@ -8,13 +11,23 @@ if (function_exists('exif_read_data')) $exif = "Yes";
 if (extension_loaded('gd') && function_exists('gd_info')) $gd = "Yes";
 if (ini_get("allow_url_fopen") == 1) $update = "Yes";
 
+function check_ffmpegthumbnailer() {
+    global $ffmpegthumbnailer;
+    if(!file_exists($ffmpegthumbnailer)) {
+        return "No";
+    }
+    $output = exec(escapeshellarg($ffmpegthumbnailer) . " -v");
+    return explode(" ",$output)[2];
+}
+$thumbnailer_version = check_ffmpegthumbnailer();
+
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="robots" content="noindex, nofollow">
-<title>MiniGal Nano system check</title>
+<title>MiniGal Nano NG system check</title>
 <style type="text/css">
 body {
 	background-color: #daddd8;
@@ -101,13 +114,24 @@ div {
 <br />
 
 <div class="left">
+	Video thumbnail support
+</div>
+<div class="<?php if($thumbnailer_version == "No") echo 'middle-no'; else echo 'middle-yes' ?>">
+	<?php echo $thumbnailer_version; ?>
+</div>
+<div class="right">
+	<a href="https://code.google.com/p/ffmpegthumbnailer/" target="_blank">ffmpgthumbnailer</a> is used to create thumbnails of supported video files.
+</div>
+<br />
+
+<div class="left">
 	PHP memory limit
 </div>
 <div class="middle-neutral">
 	<?php echo ini_get("memory_limit"); ?>
 </div>
 <div class="right">
-	Memory is needed to create thumbnails. Bigger images uses more memory	
+	Memory is needed to create thumbnails. Bigger images uses more memory
 </div>
 <br />
 
@@ -118,10 +142,10 @@ div {
 	<?php echo $update ?>
 </div>
 <div class="right">
-	The ability to check for new version and display this automatically. The script will work without it	
+	The ability to check for new version and display this automatically. The script will work without it
 </div>
 <br /><br />
-<a href="http://www.minigal.dk/minigal-nano.html" target="_blank">Support website</a>
-| <a href="http://www.minigal.dk/forum" target="_blank">Support forum</a>
+<!--<a href="http://www.minigal.dk/minigal-nano.html" target="_blank">Support website</a>
+| <a href="http://www.minigal.dk/forum" target="_blank">Support forum</a> --!>
 </body>
 </html>
