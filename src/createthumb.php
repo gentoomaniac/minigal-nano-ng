@@ -31,7 +31,10 @@ function create_thumb($filename, $outfile, $size = 120) {
     $yoord = 0;
 
     if (preg_match("/\.mp4$|\.mts$|\.mov$|\.m4v$|\.m4a$|\.aiff$|\.avi$|\.caf$|\.dv$|\.qtz$|\.flv$/i", $filename)) {
-        exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
+        if($outfile == null)
+            passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -a -f");
+        else
+            exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
         return;
     }
 
@@ -128,9 +131,17 @@ if (!is_file($thumbnail)) {
 
 if ( $cleanext == 'gif') {
     $img = ImageCreateFromGIF($thumbnail);
+    if(!$img) {
+        create_thumb($_GET['filename'], null, $_GET['size']);
+        exit;
+    }
     ImageGIF($img,null,90);
 } else {
     $img = ImageCreateFromJPEG($thumbnail);
+    if(!$img) {
+        create_thumb($_GET['filename'], null, $_GET['size']);
+        exit;
+    }
     ImageJPEG($img,null,90);
 }
 imagedestroy($img);
