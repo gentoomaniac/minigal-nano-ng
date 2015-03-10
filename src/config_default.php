@@ -37,10 +37,11 @@ $label_noimages 		= "No images"; //Empty folder text
 $label_loading 			= "Loading..."; //Thumbnail loading text
 
 //ADVANCED SETTINGS
-$thumb_size 			= 120; //Thumbnail height/width (square thumbs). Changing this will most likely require manual altering of the template file to make it look properly! 
+$thumb_size 			= 120; //Thumbnail height/width (square thumbs). Changing this will most likely require manual altering of the template file to make it look properly!
 $small_size 			= 1024; //Size (width) of the images displayed in the gallery. Images are scaled proportionally
 $thumb_path 			= "/tmp/thumbnails"; //Thumbnail path. Must be writable by the httpd user.
 $small_path 			= "/tmp/small"; //Preview image path. Must be writable by the httpd user.
-$label_max_length 		= 30; //Maximum chars of a folder name that will be displayed on the folder thumbnail  
+$label_max_length 		= 30; //Maximum chars of a folder name that will be displayed on the folder thumbnail
 $display_exif			= 0;
+$ffmpegthumbnailer      = "/usr/bin/ffmpegthumbnailer";
 ?>
