@@ -24,11 +24,38 @@ Example: <img src="createthumb.php?filename=photo.jpg&amp;width=100&amp;height=1
 require("config_default.php");
 include("config.php");
 
-function create_thumb($filename, $outfile, $size = 120) {
+
+function rotate_image($filename) {
+    // Rotate JPG pictures
+    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) {
+        if (function_exists('exif_read_data') && function_exists('imagerotate')) {
+            $exif = exif_read_data($filename);
+            if (array_key_exists('IFD0', $exif)) {
+                $ort = $exif['IFD0']['Orientation'];
+                $degrees = 0;
+                switch($ort) {
+                    case 6: // 90 rotate right
+                        $degrees = 270;
+                    break;
+                    case 8:    // 90 rotate left
+                        $degrees = 90;
+                    break;
+                }
+                if ($degrees != 0)  return imagerotate($target, $degrees, 0);
+            }
+        }
+    }
+
+return "";
+}
+
+function create_thumb($filename, $outfile, $size = 1024, $keepratio = true) {
     // Define variables
     $target = "";
     $xoord = 0;
     $yoord = 0;
+    $height = $size;
+    $width = $size;
 
     if (preg_match("/\.mp4$|\.mts$|\.mov$|\.m4v$|\.m4a$|\.aiff$|\.avi$|\.caf$|\.dv$|\.qtz$|\.flv$/i", $filename)) {
         if($outfile == null)
@@ -38,40 +65,49 @@ function create_thumb($filename, $outfile, $size = 120) {
         return;
     }
 
-    $imgsize = GetImageSize($filename);
-    $width = $imgsize[0];
-    $height = $imgsize[1];
-    if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
-        $xoord = ceil(($width-$height)/2);
-        $width = $height;      // Then we read a square frame that  equals the width
-    } else {
-        $yoord = ceil(($height-$width)/2);
-        $height = $width;
-    }
+    if ($keepratio) {
+        // Get new dimensions
+        list($width_orig, $height_orig) = getimagesize($filename);
 
-    // Rotate JPG pictures
-    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) {
-        if (function_exists('exif_read_data') && function_exists('imagerotate')) {
-            $exif = exif_read_data($filename);
-            $ort = $exif['IFD0']['Orientation'];
-            $degrees = 0;
-            switch($ort) {
-                case 6: // 90 rotate right
-                    $degrees = 270;
-                break;
-                case 8:    // 90 rotate left
-                    $degrees = 90;
-                break;
-            }
-            if ($degrees != 0)  $target = imagerotate($target, $degrees, 0);
+        $ratio_orig = $width_orig/$height_orig;
+
+        if ($width/$height > $ratio_orig) {
+           $width = $height*$ratio_orig;
+        } else {
+           $height = $width/$ratio_orig;
+        }
+    } else {
+        // square thumbnail
+        $imgsize = GetImageSize($filename);
+        $width = $imgsize[0];
+        $height = $imgsize[1];
+        if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
+            $xoord = ceil(($width-$height)/2);
+            $width = $height;      // Then we read a square frame that  equals the width
+        } else {
+            $yoord = ceil(($height-$width)/2);
+            $height = $width;
         }
     }
 
-    $target = ImageCreatetruecolor($size,$size);
+    // Rotate JPG pictures
+    $target = rotate_image($filename);
+
+    // create transformed image and save it
+    if ($keepratio)
+        $target = ImageCreatetruecolor($width,$height);
+    else
+        $target = ImageCreatetruecolor($size,$size);
+
     if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) $source = ImageCreateFromJPEG($filename);
     if (preg_match("/\.gif$/i", $filename)) $source = ImageCreateFromGIF($filename);
     if (preg_match("/\.png$/i", $filename)) $source = ImageCreateFromPNG($filename);
-    imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
+
+    if ($keepratio)
+        imagecopyresampled($target, $source, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
+    else
+        imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
+
     imagedestroy($source);
 
     if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) ImageJPEG($target,$outfile,90);
@@ -121,12 +157,12 @@ if (preg_match("/.gif$/i", $_GET['filename'])) {
 
 // Create paths for different picture versions
 $md5sum = md5($_GET['filename']);
-$thumbnail = $thumb_path . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
-if(!file_exists($thumb_path))
-    mkdir($thumb_path);
+$thumbnail = $cache_path . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+if(!file_exists($cache_path) && $caching)
+    mkdir($cache_path);
 
-if (!is_file($thumbnail)) {
-    create_thumb($_GET['filename'], $thumbnail, $_GET['size']);
+if (!is_file($thumbnail) && $caching) {
+    create_thumb($_GET['filename'], $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
 }
 
 if ( $cleanext == 'gif') {

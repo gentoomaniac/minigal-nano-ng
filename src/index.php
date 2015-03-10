@@ -162,7 +162,7 @@ $dirs = array();
                         $dirs[] = array(
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file . "/folder.jpg"),
-                            "html" => "<li><a href='?dir=" .ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file, $label_max_length) . "</em><span></span><img src='" . GALLERY_ROOT . "createthumb.php?filename=$currentdir/" . $file . "/folder.jpg&amp;size=$thumb_size'  alt='$label_loading' /></a></li>");
+                            "html" => "<li><a href='?dir=" .ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file, $label_max_length) . "</em><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=$currentdir/" . $file . "/folder.jpg&amp;size=$thumb_size&amp;format=square'  alt='$label_loading' /></a></li>");
                     }  else
                     {
                     // Set thumbnail to first image found (if any):
@@ -172,7 +172,7 @@ $dirs = array();
                         $dirs[] = array(
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
-                            "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file, $label_max_length) . "</em><span></span><img src='" . GALLERY_ROOT . "createthumb.php?filename=$thumbdir/" . $file . "/" . $firstimage . "&amp;size=$thumb_size'  alt='$label_loading' /></a></li>");
+                            "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file, $label_max_length) . "</em><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=$thumbdir/" . $file . "/" . $firstimage . "&amp;size=$thumb_size'  alt='$label_loading' /></a></li>");
                         } else {
                         // If no folder.jpg or image is found, then display default icon:
                             $dirs[] = array(
@@ -207,7 +207,7 @@ if (file_exists($currentdir ."/captions.txt"))
                     // JPG, GIF and PNG
                     if (preg_match("/.jpg$|.gif$|.png$/i", $file))
                     {
-                        $img_captions[$file] .= "<a href=\"createsmall.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size\">small</a>&nbsp;\n";
+                        $img_captions[$file] .= "<a href=\"getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size\">small</a>&nbsp;\n";
                         $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
                         //Read EXIF
                         if ($display_exif == 1) $img_captions[$file] .= "<br />" .readEXIF($currentdir . "/" . $file);
@@ -216,7 +216,7 @@ if (file_exists($currentdir ."/captions.txt"))
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
                             "size" => filesize($currentdir . "/" . $file),
-                            "html" => "<li><a href='createsmall.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "createthumb.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size' alt='$label_loading' /></a></li>");
+                            "html" => "<li><a href='getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size&amp;format=square' alt='$label_loading' /></a></li>");
                     }
                     // MP4
                     else if (preg_match("/.mp4$/i", $file))
@@ -227,7 +227,7 @@ if (file_exists($currentdir ."/captions.txt"))
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
                             "size" => filesize($currentdir . "/" . $file),
-                            "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "createthumb.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size' alt='$label_loading' /></a></li>");
+                            "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size&amp;format=square' alt='$label_loading' /></a></li>");
                     }
                     // Other filetypes
                     $extension = "";
@@ -340,7 +340,7 @@ if ($_GET['dir'] != "")
 //Include hidden links for all images BEFORE current page so lightbox is able to browse images on different pages
 for ($y = 0; $y < $offset_start - sizeof($dirs); $y++)
 {
-    $breadcrumb_navigation .= "<a href='createsmall.php?filename=" . $currentdir . "/" . $files[$y]["name"] . "&amp;size=" . $small_size . "' rel='lightbox[billeder]' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+    $breadcrumb_navigation .= "<a href='getimage.php?filename=" . $currentdir . "/" . $files[$y]["name"] . "&amp;size=" . $small_size . "' rel='lightbox[billeder]' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
@@ -372,7 +372,7 @@ for ($i = $offset_start - sizeof($dirs); $i < $offset_end && $offset_current < $
 //Include hidden links for all images AFTER current page so lightbox is able to browse images on different pages
 for ($y = $i; $y < sizeof($files); $y++)
 {
-    $page_navigation .= "<a href='createsmall.php?filename=" . $currentdir . "/" . $files[$y]["name"] . "&amp;size=" . $small_size . "' rel='lightbox[billeder]'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+    $page_navigation .= "<a href='getimage.php?filename=" . $currentdir . "/" . $files[$y]["name"] . "&amp;size=" . $small_size . "' rel='lightbox[billeder]'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
