@@ -21,6 +21,9 @@ Example: <img src="createthumb.php?filename=photo.jpg&amp;width=100&amp;height=1
 */
 //  error_reporting(E_ALL);
 
+require("config_default.php");
+include("config.php");
+
 function create_thumb($filename, $outfile, $size = 120) {
     // Define variables
     $target = "";
@@ -115,9 +118,9 @@ if (preg_match("/.gif$/i", $_GET['filename'])) {
 
 // Create paths for different picture versions
 $md5sum = md5($_GET['filename']);
-$thumbnail = "/tmp/thumbnails/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
-if(!file_exists("/tmp/thumbnails"))
-    mkdir("/tmp/thumbnails");
+$thumbnail = $thumb_path . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+if(!file_exists($thumb_path))
+    mkdir($thumb_path);
 
 if (!is_file($thumbnail)) {
     create_thumb($_GET['filename'], $thumbnail, $_GET['size']);
