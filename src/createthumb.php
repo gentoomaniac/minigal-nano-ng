@@ -141,9 +141,12 @@ $thumbnail = $thumb_path . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext
 if(!file_exists($thumb_path))
     mkdir($thumb_path);
 
-if (!is_file($thumbnail)) {
-    create_thumb($_GET['filename'], $thumbnail, $_GET['size']);
+if (is_file($thumbnail)) {
+    readfile($thumbnail);     //Use the cache
+    exit;
 }
+
+create_thumb($_GET['filename'], $thumbnail, $_GET['size']);
 
 if ( $cleanext == 'gif') {
     $img = ImageCreateFromGIF($thumbnail);
