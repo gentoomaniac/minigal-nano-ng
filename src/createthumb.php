@@ -28,8 +28,8 @@ function create_thumb($filename, $outfile, $size = 120) {
     $yoord = 0;
 
     if (preg_match("/\.mp4$|\.mts$|\.mov$|\.m4v$|\.m4a$|\.aiff$|\.avi$|\.caf$|\.dv$|\.qtz$|\.flv$/i", $filename)) {
-	exec ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
-	return;
+        exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
+        return;
     }
 
     $imgsize = GetImageSize($filename);
@@ -97,7 +97,7 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
     exit;
 }
 
-$extension = preg_replace('.*\.\w*$', '', $_GET['filename']);
+// $extension = preg_replace('.*\.\w*$', '', $_GET['filename']);
 
 if (preg_match("/.gif$/i", $_GET['filename'])) {
     header('Content-type: image/gif');
@@ -115,8 +115,9 @@ if (preg_match("/.gif$/i", $_GET['filename'])) {
 
 // Create paths for different picture versions
 $md5sum = md5($_GET['filename']);
-$thumbnail = "thumbnails/" . $md5sum . "_" . $size . "." . $cleanext;
-
+$thumbnail = "/tmp/thumbnails/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+if(!file_exists("/tmp/thumbnails"))
+    mkdir("/tmp/thumbnails");
 
 if (!is_file($thumbnail)) {
     create_thumb($_GET['filename'], $thumbnail, $_GET['size']);

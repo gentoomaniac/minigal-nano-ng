@@ -18,6 +18,9 @@ See a list of original features [here](http://www.minigal.dk/minigal-nano.html)
 ## Features of MiniGal Nano NG
 
 ### Implemented
+* thumbnail caching
+* reduced-size image preview
+* HTML5 video support (.mp4)
 
 ### To come
-* thumbnail caching
+* fullscreen view

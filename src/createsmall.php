@@ -100,7 +100,9 @@ if (preg_match("/\.gif$/i", $_GET['filename'])) {
 
 // Create paths for different picture versions
 $md5sum = md5($_GET['filename']);
-$small = "small/" . $md5sum . "_" . $size . "." . $cleanext;
+$small = "/tmp/small/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+if(!file_exists("/tmp/small"))
+    mkdir("/tmp/small");
 
 
 if (!is_file($small)) {
