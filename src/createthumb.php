@@ -29,24 +29,41 @@ function create_thumb($filename, $outfile, $size = 120) {
     $target = "";
     $xoord = 0;
     $yoord = 0;
+    $height = $size;
+    $width = $size;
 
     if (preg_match("/\.mp4$|\.mts$|\.mov$|\.m4v$|\.m4a$|\.aiff$|\.avi$|\.caf$|\.dv$|\.qtz$|\.flv$/i", $filename)) {
         if($outfile == null)
-            passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -a -f");
+            passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -f" . ($size<=512?" -a" : ""));
         else
-            exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
+            exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -f" . ($size<=512?" -a" : ""));
         return;
     }
 
-    $imgsize = GetImageSize($filename);
-    $width = $imgsize[0];
-    $height = $imgsize[1];
-    if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
-        $xoord = ceil(($width-$height)/2);
-        $width = $height;      // Then we read a square frame that  equals the width
+    list($width_orig, $height_orig) = GetImageSize($filename);
+
+    if($size<=512) {
+        if ($width_orig > $height_orig) { // If the width is greater than the height it’s a horizontal picture
+            $xoord = ceil(($width_orig-$height_orig)/2);
+            $width_orig = $height_orig;      // Then we read a square frame that  equals the width
+        } else {
+            $yoord = ceil(($height_orig-$width_orig)/2);
+            $height_orig = $width_orig;
+        }
     } else {
-        $yoord = ceil(($height-$width)/2);
-        $height = $width;
+        $ratio_orig = $width_orig/$height_orig;
+
+        if ($width_orig > $height_orig) {
+           $height = $width/$ratio_orig;
+        } else {
+           $width = $height*$ratio_orig;
+        }
+
+        if($height>=$height_orig) {
+	    //todo: Return the original image file unaltered
+            $height = $height_orig;
+            $width = $width_orig;
+        }
     }
 
     // Rotate JPG pictures
@@ -67,11 +84,11 @@ function create_thumb($filename, $outfile, $size = 120) {
         }
     }
 
-    $target = ImageCreatetruecolor($size,$size);
+    $target = ImageCreatetruecolor($width,$height);
     if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) $source = ImageCreateFromJPEG($filename);
     if (preg_match("/\.gif$/i", $filename)) $source = ImageCreateFromGIF($filename);
     if (preg_match("/\.png$/i", $filename)) $source = ImageCreateFromPNG($filename);
-    imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
+    imagecopyresampled($target,$source,0,0,$xoord,$yoord,$width,$height,$width_orig, $height_orig);
     imagedestroy($source);
 
     if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) ImageJPEG($target,$outfile,90);
@@ -103,7 +120,6 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
     exit;
 }
 
-// $extension = preg_replace('.*\.\w*$', '', $_GET['filename']);
 
 if (preg_match("/.gif$/i", $_GET['filename'])) {
     header('Content-type: image/gif');
