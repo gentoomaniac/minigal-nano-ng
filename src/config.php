@@ -45,7 +45,6 @@ $supported_video_types  = array("mp4", "mts", "mov", "m4v", "m4a", "aiff", "avi"
 
 //THUMBNAIL CACHING
 $caching                = true;
-$ignorecacheonerror     = false;
 
 //SMALL CACHE
 $small_enabled          = true;

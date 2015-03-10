@@ -42,5 +42,11 @@ $small_size 			= 1024; //Size (width) of the images displayed in the gallery. Im
 $cache_path 			= "/tmp/imagecache"; //Cache for resized images (thumbnails, previews). Must be writable by the httpd user.
 $label_max_length 		= 30; //Maximum chars of a folder name that will be displayed on the folder thumbnail
 $display_exif			= 0;
+$supported_image_types  = array("jpg", "jpeg", "png", "gif"); //List of supported image extensions
+$supported_video_types  = array("mp4", "mts", "mov", "m4v", "m4a", "aiff", "avi", "caf", "dv", "qtz", "flv"); //List of supported video extensions
+
+//THUMBNAIL CACHING
+$caching                = true;
+
 $ffmpegthumbnailer      = "/usr/bin/ffmpegthumbnailer";
 ?>
