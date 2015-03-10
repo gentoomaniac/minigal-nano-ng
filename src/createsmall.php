@@ -36,7 +36,7 @@ function create_thumb($filename, $outfile, $size = 1024) {
     $ratio_orig = $width_orig/$height_orig;
 
     if ($width/$height > $ratio_orig) {
-       $width = $hight*$ratio_orig;
+       $width = $height*$ratio_orig;
     } else {
        $height = $width/$ratio_orig;
     }
@@ -114,9 +114,17 @@ if (!is_file($small)) {
 
 if ( $cleanext == 'jpeg') {
     $img = ImageCreateFromJPEG($small);
+    if(!$img) {
+        create_thumb($_GET['filename'], null, $_GET['size']);
+        exit;
+    }
     ImageJPEG($img,null,90);
 } else if ( $cleanext == 'gif') {
     $img = ImageCreateFromGIF($small);
+    if(!$img) {
+        create_thumb($_GET['filename'], null, $_GET['size']);
+        exit;
+    }
     ImageGIF($img,null,90);
 } else {
     $img = ImageCreateFromJPEG('images/cannotopen.jpg');
