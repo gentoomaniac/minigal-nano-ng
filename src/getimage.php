@@ -49,71 +49,68 @@ function rotate_image($filename) {
 return "";
 }
 
-function create_thumb($filename, $outfile, $size = 1024, $keepratio = true) {
+function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio = true) {
+    global $supported_video_types;
     // Define variables
-    $target = "";
+    $target = rotate_image($filename);
     $xoord = 0;
     $yoord = 0;
     $height = $size;
     $width = $size;
 
-    if (preg_match("/\.mp4$|\.mts$|\.mov$|\.m4v$|\.m4a$|\.aiff$|\.avi$|\.caf$|\.dv$|\.qtz$|\.flv$/i", $filename)) {
+    if ( in_array($extension, $supported_video_types) ) {
         if($outfile == null)
             passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -a -f");
         else
             exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
         return;
-    }
-
-    if ($keepratio) {
-        // Get new dimensions
-        list($width_orig, $height_orig) = getimagesize($filename);
-
-        $ratio_orig = $width_orig/$height_orig;
-
-        if ($width/$height > $ratio_orig) {
-           $width = $height*$ratio_orig;
-        } else {
-           $height = $width/$ratio_orig;
-        }
     } else {
-        // square thumbnail
-        $imgsize = GetImageSize($filename);
-        $width = $imgsize[0];
-        $height = $imgsize[1];
-        if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
-            $xoord = ceil(($width-$height)/2);
-            $width = $height;      // Then we read a square frame that  equals the width
+        // load source image
+        if ($extension == "jpg" || $extension == "jpeg")
+            $source = ImageCreateFromJPEG($filename);
+        else if ($extension == "gif")
+            $source = ImageCreateFromGIF($filename);
+        else if ($extension == "png")
+            $source = ImageCreateFromPNG($filename);
+
+        if ($keepratio) {
+            // Get new dimensions
+            list($width_orig, $height_orig) = getimagesize($filename);
+
+            $ratio_orig = $width_orig/$height_orig;
+
+            if ($width/$height > $ratio_orig) {
+               $width = $height*$ratio_orig;
+            } else {
+               $height = $width/$ratio_orig;
+            }
+            $target = ImageCreatetruecolor($width,$height);
+            imagecopyresampled($target, $source, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
         } else {
-            $yoord = ceil(($height-$width)/2);
-            $height = $width;
+            // square thumbnail
+            $imgsize = GetImageSize($filename);
+            $width = $imgsize[0];
+            $height = $imgsize[1];
+            if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
+                $xoord = ceil(($width-$height)/2);
+                $width = $height;      // Then we read a square frame that  equals the width
+            } else {
+                $yoord = ceil(($height-$width)/2);
+                $height = $width;
+            }
+            $target = ImageCreatetruecolor($size,$size);
+            imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
         }
+        imagedestroy($source);
+
+        if ($extension == "jpg" || $extension == "jpeg")
+            ImageJPEG($target,$outfile,90);
+        else if ($extension == "gif")
+            ImageGIF($target,$outfile,90);
+        else if ($extension == "png")
+            ImageJPEG($target,$outfile,90); // Using ImageJPEG on purpose
+        imagedestroy($target);
     }
-
-    // Rotate JPG pictures
-    $target = rotate_image($filename);
-
-    // create transformed image and save it
-    if ($keepratio)
-        $target = ImageCreatetruecolor($width,$height);
-    else
-        $target = ImageCreatetruecolor($size,$size);
-
-    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) $source = ImageCreateFromJPEG($filename);
-    if (preg_match("/\.gif$/i", $filename)) $source = ImageCreateFromGIF($filename);
-    if (preg_match("/\.png$/i", $filename)) $source = ImageCreateFromPNG($filename);
-
-    if ($keepratio)
-        imagecopyresampled($target, $source, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
-    else
-        imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
-
-    imagedestroy($source);
-
-    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) ImageJPEG($target,$outfile,90);
-    if (preg_match("/\.gif$/i", $filename)) ImageGIF($target,$outfile,90);
-    if (preg_match("/\.png$/i", $filename)) ImageJPEG($target,$outfile,90); // Using ImageJPEG on purpose
-    imagedestroy($target);
 }
 
 
@@ -139,14 +136,15 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
     exit;
 }
 
-// $extension = preg_replace('.*\.\w*$', '', $_GET['filename']);
-
-if (preg_match("/.gif$/i", $_GET['filename'])) {
-    header('Content-type: image/gif');
-    $cleanext = 'gif';
-} else if (preg_match("/\.jpg$|\.jpeg$|\.png$|\.mp4$|\.mts$|\.mov$|\.m4v$|\.m4a$|\.aiff$|\.avi$|\.caf$|\.dv$|\.qtz$|\.flv$/i", $_GET['filename'])) {
-    header('Content-type: image/jpeg');
-    $cleanext = 'jpeg';
+$extension = strtolower(preg_replace('/^.*\./', '', $_GET['filename']));
+if ( in_array($extension, $supported_image_types) || in_array($extension, $supported_video_types) ) {
+    if ($extension == 'gif') {
+        header('Content-type: image/gif');
+        $cleanext = 'gif';
+    } else {
+        header('Content-type: image/jpeg');
+        $cleanext = 'jpeg';
+    }
 } else {
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
@@ -162,20 +160,20 @@ if(!file_exists($cache_path) && $caching)
     mkdir($cache_path);
 
 if (!is_file($thumbnail) && $caching) {
-    create_thumb($_GET['filename'], $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
+    create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
 }
 
 if ( $cleanext == 'gif') {
     $img = ImageCreateFromGIF($thumbnail);
     if(!$img) {
-        create_thumb($_GET['filename'], null, $_GET['size']);
+        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
         exit;
     }
     ImageGIF($img,null,90);
 } else {
     $img = ImageCreateFromJPEG($thumbnail);
     if(!$img) {
-        create_thumb($_GET['filename'], null, $_GET['size']);
+        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
         exit;
     }
     ImageJPEG($img,null,90);

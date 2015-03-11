@@ -40,6 +40,8 @@ $label_loading          = "Loading..."; //Thumbnail loading text
 $thumb_size             = 120; //Thumbnail height/width (square thumbs). Changing this will most likely require manual altering of the template file to make it look properly!
 $label_max_length       = 30; //Maximum chars of a folder name that will be displayed on the folder thumbnail
 $display_exif           = 1;
+$supported_image_types  = array("jpg", "jpeg", "png", "gif"); //List of supported image extensions
+$supported_video_types  = array("mp4", "mts", "mov", "m4v", "m4a", "aiff", "avi", "caf", "dv", "qtz", "flv"); //List of supported video extensions
 
 //THUMBNAIL CACHING
 $caching                = true;
