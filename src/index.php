@@ -216,7 +216,7 @@ if (file_exists($currentdir ."/captions.txt"))
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
                             "size" => filesize($currentdir . "/" . $file),
-                            "html" => "<li><a href='getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size&amp;format=square' alt='$label_loading' /></a></li>");
+                            "html" => "<li><a href='getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=$small_size' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size&amp;format=square' alt='$label_loading' /></a><em>" . padstring($file, $label_max_length) . "</em></li>");
                     }
                     // MP4
                     else if (preg_match("/.mp4$/i", $file))
@@ -227,7 +227,7 @@ if (file_exists($currentdir ."/captions.txt"))
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
                             "size" => filesize($currentdir . "/" . $file),
-                            "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size&amp;format=square' alt='$label_loading' /></a></li>");
+                            "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='$img_captions[$file]'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size&amp;format=square' alt='$label_loading' /></a><em>" . padstring($file, $label_max_length) . "</em></li>");
                     }
                     // Other filetypes
                     $extension = "";
