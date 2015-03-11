@@ -42,7 +42,8 @@ $label_max_length       = 30; //Maximum chars of a folder name that will be disp
 $display_exif           = 1;
 
 //THUMBNAIL CACHING
-$thumbcache_enable      = true;
+$caching                = true;
+$ignorecacheonerror     = false;
 
 //SMALL CACHE
 $small_enabled          = true;
