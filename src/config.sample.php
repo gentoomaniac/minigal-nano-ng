@@ -42,6 +42,9 @@ $config['ffmpegthumbnailer']      = "/usr/bin/ffmpegthumbnailer";
 $config['supported_image_types']  = array("jpg", "jpeg", "png", "gif"); //List of supported image extensions
 $config['supported_video_types']  = array("mp4", "mts", "mov", "m4v", "m4a", "aiff", "avi", "caf", "dv", "qtz", "flv"); //List of supported video extensions
 $config['memory_limit']           = "512M";
+$config['check_update']           = true;
+$config['check_update_url']       = "http://www.minigal.dk/minigalnano_version.php";
+$config['debug']                  = false;
 
 //THUMBNAIL CACHING
 $config['caching']                = true;

@@ -17,25 +17,25 @@ Please enjoy this free script!
 
 // Do not edit below this section unless you know what you are doing!
 
-
-//-----------------------
-// Debug stuff
-//-----------------------
-    error_reporting(E_ERROR);
-//  error_reporting(E_ALL);
-//  error_reporting(0);
-/*
-    $mtime = microtime();
-    $mtime = explode(" ",$mtime);
-    $mtime = $mtime[1] + $mtime[0];
-    $starttime = $mtime;
-*/
-
 if(!defined("MINIGAL_INTERNAL")) {
     define("MINIGAL_INTERNAL", true);
 }
 require("config.php");
 require("i18n/".$config['i18n'].".php");
+
+//-----------------------
+// Debug stuff
+//-----------------------
+if($config['debug']) {
+    error_reporting(E_ALL);
+    $mtime = microtime();
+    $mtime = explode(" ",$mtime);
+    $mtime = $mtime[1] + $mtime[0];
+    $starttime = $mtime;
+} else {
+    error_reporting(E_ERROR);
+//  error_reporting(0);
+}
 
 ini_set("memory_limit",$config['memory_limit']);
 
@@ -55,21 +55,12 @@ $messages = "";
 //-----------------------
 if (!function_exists('exif_read_data') && $config['display_exif'] == 1) {
     $config['display_exif'] = 0;
-    $messages = "Error: PHP EXIF is not available. Set &#36;display_exif = 0; in config.php to remove this message";
+    $messages = $i18n['error_no_exif_support'];
 }
 
 //-----------------------
 // FUNCTIONS
 //-----------------------
-function is_directory($filepath) {
-    // $filepath must be the entire system path to the file
-    if (!@opendir($filepath)) return FALSE;
-    else {
-        return TRUE;
-        closedir($filepath);
-    }
-}
-
 function padstring($name, $length) {
     global $config;
     if (!isset($length)) $length = $config['label_max_length'];
@@ -79,15 +70,14 @@ function padstring($name, $length) {
 }
 // ToDo: fix this function!
 function getfirstImage($dirname) {
+    global $config;
     $imageName = false;
-    $ext = array("jpg", "png", "jpeg", "gif", "JPG", "PNG", "GIF", "JPEG");
     if($handle = opendir($dirname))
     {
         while(false !== ($file = readdir($handle)))
         {
-            $lastdot = mb_strrpos($file, '.');
-            $extension = mb_substr($file, $lastdot + 1);
-            if ($file[0] != '.' && in_array($extension, $ext)) break;
+            $extension = strtolower(preg_replace('/^.*\./', '', $file));
+            if ($file[0] != '.' && in_array($extension, $config['supported_image_types'])) break;
         }
         $imageName = $file;
         closedir($handle);
@@ -124,17 +114,17 @@ function readEXIF($file) {
 }
 function checkpermissions($file) {
     global $messages;
-    if (mb_substr(decoct(fileperms($file)), -1, mb_strlen(fileperms($file))) < 4 OR mb_substr(decoct(fileperms($file)), -3,1) < 4) $messages = "At least one file or folder has wrong permissions. Learn how to <a href='http://minigal.dk/faq-reader/items/how-do-i-change-file-permissions-chmod.html' target='_blank'>set file permissions</a>";
+    if (mb_substr(decoct(fileperms($file)), -1, mb_strlen(fileperms($file))) < 4 OR mb_substr(decoct(fileperms($file)), -3,1) < 4) $messages = $i18n['error_file_permissions'];
 }
 
 //-----------------------
 // CHECK FOR NEW VERSION
 //-----------------------
-if (ini_get('allow_url_fopen') == "1") {
-    $file = @fopen ("http://www.minigal.dk/minigalnano_version.php", "r");
+if (ini_get('allow_url_fopen') == "1" && $config['check_update']) {
+    $file = @fopen ($config['check_update_url'], "r");
     $server_version = fgets ($file, 1024);
     if (mb_strlen($server_version) == 5 ) { //If string retrieved is exactly 5 chars then continue
-        if (version_compare($server_version, $config['version'], '>')) $messages = "MiniGal Nano $server_version is available! <a href='http://www.minigal.dk/minigal-nano.html' target='_blank'>Get it now</a>";
+        if (version_compare($server_version, $config['version'], '>')) $messages = sprintf($i18n['msg_update_available'], $server_version);
     }
     fclose($file);
 }
@@ -155,7 +145,7 @@ $dirs = array();
     while (false !== ($file = readdir($handle)))
     {
 // 1. LOAD FOLDERS
-        if (is_directory($currentdir . "/" . $file))
+        if (is_dir($currentdir . "/" . $file))
             {
                 if ($file != "." && $file != ".." && mb_substr($file, 0, 1) != ".")
                 {
@@ -167,10 +157,8 @@ $dirs = array();
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file . "/folder.jpg"),
                             "html" => "<li><a href='?dir=" .ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=$currentdir/" . $file . "/folder.jpg&amp;size=".$config['thumb_size']."&amp;format=square'  alt='".$i18n['label_loading']."' /></a></li>");
-                    }  else
-                    {
-                    // Set thumbnail to first image found (if any):
-                        unset ($firstimage);
+                    } else {
+                        // Set thumbnail to first image found (if any):
                         $firstimage = getfirstImage("$currentdir/" . $file);
                         if ($firstimage != "") {
                         $dirs[] = array(
@@ -352,7 +340,7 @@ for ($y = 0; $y < $offset_start - sizeof($dirs); $y++)
 //-----------------------
 if (count($dirs) + count($files) == 0) {
     $thumbnails .= "<li>" . $i18n['label_noimages'] . "</li>"; //Display 'no images' text
-    if($currentdir == "photos") $messages = "It looks like you have just installed MiniGal Nano. Please run the <a href='system_check.php'>system check tool</a>";
+    if($currentdir == "photos") $messages =  $i18n['msg_first_run'];
 }
 $offset_current = $offset_start;
 for ($x = $offset_start; $x < sizeof($dirs) && $x < $offset_end; $x++)
@@ -416,11 +404,12 @@ $messages = "<div id=\"topbar\">" . $messages . " <a href=\"#\" onclick=\"docume
 //-----------------------
 //Debug stuff
 //-----------------------
-/*   $mtime = microtime();
+if($config['debug']) {
+   $mtime = microtime();
    $mtime = explode(" ",$mtime);
    $mtime = $mtime[1] + $mtime[0];
    $endtime = $mtime;
    $totaltime = ($endtime - $starttime);
    echo "This page was created in ".$totaltime." seconds";
-*/
+}
 ?>
