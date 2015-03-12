@@ -21,9 +21,12 @@ Example: <img src="createthumb.php?filename=photo.jpg&amp;width=100&amp;height=1
 */
 //  error_reporting(E_ALL);
 
-require("config_default.php");
-include("config.php");
+if(!defined("MINIGAL_INTERNAL")) {
+    define("MINIGAL_INTERNAL", true);
+}
 
+require("config.php");
+ini_set("memory_limit",$config['memory_limit']);
 
 function rotate_image($filename) {
     // Rotate JPG pictures
@@ -46,11 +49,11 @@ function rotate_image($filename) {
         }
     }
 
-return "";
+    return "";
 }
 
 function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio = true) {
-    global $supported_video_types;
+    global $config;
     // Define variables
     $target = rotate_image($filename);
     $xoord = 0;
@@ -58,12 +61,15 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
     $height = $size;
     $width = $size;
 
-    if ( in_array($extension, $supported_video_types) ) {
-        if($outfile == null)
-            passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -a -f");
-        else
-            exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
+    if (is_file($outfile)) {
+        readfile($outfile);     //Use the cache
         return;
+    }
+
+    ob_start();
+
+    if ( in_array($extension, $config['supported_video_types']) ) {
+        passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -f" . ($size<=$thumbthreshold?" -a" : ""));
     } else {
         // load source image
         if ($extension == "jpg" || $extension == "jpeg")
@@ -103,14 +109,18 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
         }
         imagedestroy($source);
 
-        if ($extension == "jpg" || $extension == "jpeg")
-            ImageJPEG($target,$outfile,90);
+        if ($extension == "jpg" || $extension == "jpeg" || $extension == "png")
+            ImageJPEG($target,null,90);
         else if ($extension == "gif")
-            ImageGIF($target,$outfile,90);
-        else if ($extension == "png")
-            ImageJPEG($target,$outfile,90); // Using ImageJPEG on purpose
+            ImageGIF($target,null,90);
         imagedestroy($target);
     }
+
+    if($config['caching']){
+        file_put_contents($outfile,ob_get_contents());
+    }
+
+    ob_end_flush();
 }
 
 
@@ -123,7 +133,7 @@ if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/questionmark.jpg');
     ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimg);
+    imagedestroy($errorimage);
     exit;
 }
 
@@ -132,12 +142,12 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
     ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimg);
+    imagedestroy($errorimage);
     exit;
 }
 
 $extension = strtolower(preg_replace('/^.*\./', '', $_GET['filename']));
-if ( in_array($extension, $supported_image_types) || in_array($extension, $supported_video_types) ) {
+if ( in_array($extension, $config['supported_image_types']) || in_array($extension, $config['supported_video_types']) ) {
     if ($extension == 'gif') {
         header('Content-type: image/gif');
         $cleanext = 'gif';
@@ -149,34 +159,15 @@ if ( in_array($extension, $supported_image_types) || in_array($extension, $suppo
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
     ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimg);
+    imagedestroy($errorimage);
     exit;
 }
 
 // Create paths for different picture versions
 $md5sum = md5($_GET['filename']);
-$thumbnail = $cache_path . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
-if(!file_exists($cache_path) && $caching)
-    mkdir($cache_path);
+$thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+if(!file_exists($config['cache_path']) && $config['caching'])
+    mkdir($config['cache_path']);
 
-if (!is_file($thumbnail) && $caching) {
-    create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
-}
-
-if ( $cleanext == 'gif') {
-    $img = ImageCreateFromGIF($thumbnail);
-    if(!$img) {
-        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
-        exit;
-    }
-    ImageGIF($img,null,90);
-} else {
-    $img = ImageCreateFromJPEG($thumbnail);
-    if(!$img) {
-        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
-        exit;
-    }
-    ImageJPEG($img,null,90);
-}
-imagedestroy($img);
+create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
 ?>
