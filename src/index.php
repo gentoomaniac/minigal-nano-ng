@@ -140,110 +140,137 @@ $currentdir = GALLERY_ROOT . $thumbdir;
 //-----------------------
 $files = array();
 $dirs = array();
- if ($handle = opendir($currentdir))
- {
+if ($handle = opendir($currentdir))
+{
     while (false !== ($file = readdir($handle)))
     {
-// 1. LOAD FOLDERS
+        // 1. LOAD FOLDERS
         if (is_dir($currentdir . "/" . $file))
+        {
+            if ($file != "." && $file != ".." && mb_substr($file, 0, 1) != ".")
             {
-                if ($file != "." && $file != ".." && mb_substr($file, 0, 1) != ".")
+                checkpermissions($currentdir . "/" . $file); // Check for correct file permission
+                // Set thumbnail to folder.jpg if found:
+                if (file_exists("$currentdir/" . $file . "/folder.jpg"))
                 {
-                    checkpermissions($currentdir . "/" . $file); // Check for correct file permission
-                    // Set thumbnail to folder.jpg if found:
-                    if (file_exists("$currentdir/" . $file . "/folder.jpg"))
-                    {
-                        $dirs[] = array(
-                            "name" => $file,
-                            "date" => filemtime($currentdir . "/" . $file . "/folder.jpg"),
-                            "html" => "<li><a href='?dir=" .ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=$currentdir/" . $file . "/folder.jpg&amp;size=".$config['thumb_size']."&amp;format=square'  alt='".$i18n['label_loading']."' /></a></li>");
-                    } else {
-                        // Set thumbnail to first image found (if any):
-                        $firstimage = getfirstImage("$currentdir/" . $file);
-                        if ($firstimage != "") {
+                    $dirs[] = array(
+                        "name" => $file,
+                        "date" => filemtime($currentdir . "/" . $file . "/folder.jpg"),
+                        "html" => "<li><a href='?dir=" .ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" .
+                                   padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" .
+                                   GALLERY_ROOT . "getimage.php?filename=$currentdir/" . $file . "/folder.jpg&amp;size=" .
+                                   $config['thumb_size']."&amp;format=square'  alt='" . $i18n['label_loading'] . "' /></a></li>");
+                } else {
+                    // Set thumbnail to first image found (if any):
+                    $firstimage = getfirstImage("$currentdir/" . $file);
+                    if ($firstimage != "") {
                         $dirs[] = array(
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
-                            "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=$thumbdir/" . $file . "/" . $firstimage . "&amp;size=".$config['thumb_size']."'  alt='".$i18n['label_loading']."' /></a></li>");
-                        } else {
-                        // If no folder.jpg or image is found, then display default icon:
-                            $dirs[] = array(
-                                "name" => $file,
-                                "date" => filemtime($currentdir . "/" . $file),
-                                "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" . padstring($file) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" . mb_strtolower($config['folder_color']) . ".png' width='" . $config['thumb_size'] . "' height='" . $config['thumb_size'] . "' alt='" . $i18n['label_loading']."' /></a></li>");
-                        }
+                            "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" .
+                                       padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" .
+                                       GALLERY_ROOT . "getimage.php?filename=$thumbdir/" . $file . "/" . $firstimage .
+                                       "&amp;size=".$config['thumb_size']."'  alt='".$i18n['label_loading']."' /></a></li>"
+                        );
+                    } else {
+                    // If no folder.jpg or image is found, then display default icon:
+                        $dirs[] = array(
+                            "name" => $file,
+                            "date" => filemtime($currentdir . "/" . $file),
+                            "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" .
+                                       padstring($file) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" .
+                                       mb_strtolower($config['folder_color']) . ".png' width='" . $config['thumb_size'] .
+                                       "' height='" . $config['thumb_size'] . "' alt='" . $i18n['label_loading']."' /></a></li>"
+                        );
                     }
                 }
             }
+        }
 
-// 2. LOAD CAPTIONS
-if (file_exists($currentdir ."/captions.txt"))
-{
-    $file_handle = fopen($currentdir ."/captions.txt", "rb");
-    while (!feof($file_handle) )
-    {
-        $line_of_text = fgets($file_handle);
-        $parts = explode('/n', $line_of_text);
-        foreach($parts as $img_capts)
+        // 2. LOAD CAPTIONS
+        if (file_exists($currentdir ."/captions.txt"))
         {
-            list($img_filename, $img_caption) = explode('|', $img_capts);
-            $img_captions[$img_filename] = $img_caption;
+            $file_handle = fopen($currentdir ."/captions.txt", "rb");
+            while (!feof($file_handle) )
+            {
+                $line_of_text = fgets($file_handle);
+                $parts = explode('/n', $line_of_text);
+                foreach($parts as $img_capts)
+                {
+                    list($img_filename, $img_caption) = explode('|', $img_capts);
+                    $img_captions[$img_filename] = $img_caption;
+                }
+            }
+            fclose($file_handle);
+        }
+
+        // 3. LOAD FILES
+        if ($file != "." && $file != ".." && $file != "folder.jpg" && mb_substr($file, 0, 1) != ".")
+        {
+            $extension = strtolower(preg_replace('/^.*\./', '', $file));
+            if (in_array($extension, $config['supported_image_types']))
+            {
+                // JPG, GIF and PNG
+                $img_captions[$file] .= "<a href=\"getimage.php?filename=" . $currentdir .
+                                        "/" . $file . "&amp;size=".$config['small_size']."\">small</a>&nbsp;\n";
+                $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
+
+                //Read EXIF
+                if ($display_exif == 1)
+                    $img_captions[$file] .= "<br />" .readEXIF($currentdir . "/" . $file);
+
+                checkpermissions($currentdir . "/" . $file);
+                $files[] = array (
+                    "name" => $file,
+                    "date" => filemtime($currentdir . "/" . $file),
+                    "size" => filesize($currentdir . "/" . $file),
+                    "html" => "<li><a href='getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=" .
+                               $config['small_size'] . "' rel='lightbox[billeder]' title='" . $img_captions[$file] .
+                               "'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir .
+                               "/" . $file . "&amp;size=" . $config['thumb_size'] . "&amp;format=square' alt='" .
+                               $i18n['label_loading'] . "' /></a></li>"
+                );
+
+            } else if (in_array($extension, $config['supported_video_types'])) {
+                // MP4
+                $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
+                checkpermissions($currentdir . "/" . $file);
+                $files[] = array (
+                    "name" => $file,
+                    "date" => filemtime($currentdir . "/" . $file),
+                    "size" => filesize($currentdir . "/" . $file),
+                    "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='" .
+                               $img_captions[$file]."'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" .
+                               $thumbdir . "/" . $file . "&amp;size=" . $config['thumb_size'] . "&amp;format=square' alt='" .
+                               $i18n['label_loading'] . "' /></a></li>"
+                );
+            }
+            // Other filetypes
+            $extension = "";
+            if (preg_match("/.pdf$/i", $file)) $extension = "PDF"; // PDF
+            if (preg_match("/.zip$/i", $file)) $extension = "ZIP"; // ZIP archive
+            if (preg_match("/.rar$|.r[0-9]{2,}/i", $file)) $extension = "RAR"; // RAR Archive
+            if (preg_match("/.tar$/i", $file)) $extension = "TAR"; // TARball archive
+            if (preg_match("/.gz$/i", $file)) $extension = "GZ"; // GZip archive
+            if (preg_match("/.doc$|.docx$/i", $file)) $extension = "DOCX"; // Word
+            if (preg_match("/.ppt$|.pptx$/i", $file)) $extension = "PPTX"; //Powerpoint
+            if (preg_match("/.xls$|.xlsx$/i", $file)) $extension = "XLXS"; // Excel
+
+            if ($extension != "") {
+                $files[] = array (
+                    "name" => $file,
+                    "date" => filemtime($currentdir . "/" . $file),
+                    "size" => filesize($currentdir . "/" . $file),
+                    "html" => "<li><a href='" . $currentdir . "/" . $file . "' title='$file'><em-pdf>" .
+                               padstring($file, 20) . "</em-pdf><span></span><img src='" . GALLERY_ROOT .
+                               "images/filetype_" . $extension . ".png' width='" . $config['thumb_size'] .
+                               "' height='$thumb_size' alt='$file' /></a></li>"
+                );
+            }
         }
     }
-    fclose($file_handle);
-}
-
-// 3. LOAD FILES
-                if ($file != "." && $file != ".." && $file != "folder.jpg" && mb_substr($file, 0, 1) != ".")
-                {
-                    // JPG, GIF and PNG
-                    if (preg_match("/.jpg$|.gif$|.png$/i", $file))
-                    {
-                        $img_captions[$file] .= "<a href=\"getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=".$config['small_size']."\">small</a>&nbsp;\n";
-                        $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
-                        //Read EXIF
-                        if ($display_exif == 1) $img_captions[$file] .= "<br />" .readEXIF($currentdir . "/" . $file);
-                        checkpermissions($currentdir . "/" . $file);
-                        $files[] = array (
-                            "name" => $file,
-                            "date" => filemtime($currentdir . "/" . $file),
-                            "size" => filesize($currentdir . "/" . $file),
-                            "html" => "<li><a href='getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=".$config['small_size']."' rel='lightbox[billeder]' title='".$img_captions[$file]."'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=".$config['thumb_size']."&amp;format=square' alt='".$i18n['label_loading']."' /></a></li>");
-                    }
-                    // MP4
-                    else if (preg_match("/.mp4$/i", $file))
-                    {
-                        $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
-                        checkpermissions($currentdir . "/" . $file);
-                        $files[] = array (
-                            "name" => $file,
-                            "date" => filemtime($currentdir . "/" . $file),
-                            "size" => filesize($currentdir . "/" . $file),
-                            "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='".$img_captions[$file]."'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size&amp;format=square' alt='" . $i18n['label_loading'] . "' /></a></li>");
-                    }
-                    // Other filetypes
-                    $extension = "";
-                    if (preg_match("/.pdf$/i", $file)) $extension = "PDF"; // PDF
-                    if (preg_match("/.zip$/i", $file)) $extension = "ZIP"; // ZIP archive
-                    if (preg_match("/.rar$|.r[0-9]{2,}/i", $file)) $extension = "RAR"; // RAR Archive
-                    if (preg_match("/.tar$/i", $file)) $extension = "TAR"; // TARball archive
-                    if (preg_match("/.gz$/i", $file)) $extension = "GZ"; // GZip archive
-                    if (preg_match("/.doc$|.docx$/i", $file)) $extension = "DOCX"; // Word
-                    if (preg_match("/.ppt$|.pptx$/i", $file)) $extension = "PPTX"; //Powerpoint
-                    if (preg_match("/.xls$|.xlsx$/i", $file)) $extension = "XLXS"; // Excel
-
-                    if ($extension != "")
-                    {
-                        $files[] = array (
-                            "name" => $file,
-                            "date" => filemtime($currentdir . "/" . $file),
-                            "size" => filesize($currentdir . "/" . $file),
-                            "html" => "<li><a href='" . $currentdir . "/" . $file . "' title='$file'><em-pdf>" . padstring($file, 20) . "</em-pdf><span></span><img src='" . GALLERY_ROOT . "images/filetype_" . $extension . ".png' width='".$config['thumb_size']."' height='$thumb_size' alt='$file' /></a></li>");
-                    }
-                }
-    }
-  closedir($handle);
-  } else die("ERROR: Could not open $currentdir for reading!");
+    closedir($handle);
+} else die("ERROR: Could not open $currentdir for reading!");
 
 //-----------------------
 // SORT FILES AND FOLDERS
