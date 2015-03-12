@@ -163,20 +163,7 @@ if (!is_file($thumbnail) && $caching) {
     create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
 }
 
-if ( $cleanext == 'gif') {
-    $img = ImageCreateFromGIF($thumbnail);
-    if(!$img) {
-        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
-        exit;
-    }
-    ImageGIF($img,null,90);
-} else {
-    $img = ImageCreateFromJPEG($thumbnail);
-    if(!$img) {
-        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
-        exit;
-    }
-    ImageJPEG($img,null,90);
+if ( ! readfile($thumbnail) || ! $caching ) {
+    create_thumb($_GET['filename'], $extension, null, $_GET['size']);
 }
-imagedestroy($img);
 ?>
