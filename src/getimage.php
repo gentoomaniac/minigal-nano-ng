@@ -28,28 +28,26 @@ if(!defined("MINIGAL_INTERNAL")) {
 require("config.php");
 ini_set("memory_limit",$config['memory_limit']);
 
-function rotate_image($filename) {
+function rotate_image($filename, $target) {
     // Rotate JPG pictures
-    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) {
-        if (function_exists('exif_read_data') && function_exists('imagerotate')) {
-            $exif = exif_read_data($filename);
-            if (array_key_exists('IFD0', $exif)) {
-                $ort = $exif['IFD0']['Orientation'];
-                $degrees = 0;
-                switch($ort) {
-                    case 6: // 90 rotate right
-                        $degrees = 270;
-                    break;
-                    case 8:    // 90 rotate left
-                        $degrees = 90;
-                    break;
-                }
-                if ($degrees != 0)  return imagerotate($target, $degrees, 0);
+    if (preg_match("/\.jpg$|\.jpeg$/i", $filename) && function_exists('exif_read_data') && function_exists('imagerotate')) {
+        $exif = exif_read_data($filename);
+        if (array_key_exists('IFD0', $exif)) {
+            $ort = $exif['IFD0']['Orientation'];
+            $degrees = 0;
+            switch($ort) {
+                case 6: // 90 rotate right
+                    $degrees = 270;
+                break;
+                case 8:    // 90 rotate left
+                    $degrees = 90;
+                break;
             }
+            if ($degrees != 0)  return imagerotate($target, $degrees, 0);
         }
     }
 
-    return "";
+return $target;
 }
 
 function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio = true) {
@@ -61,7 +59,7 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
     $height = $size;
     $width = $size;
 
-    if (is_file($outfile)) {
+    if ($config['caching'] && is_file($outfile)) {
         readfile($outfile);     //Use the cache
         return;
     }
@@ -69,56 +67,58 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
     ob_start();
 
     if ( in_array($extension, $config['supported_video_types']) ) {
-        passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -f" . ($size<=$thumbthreshold?" -a" : ""));
+        // Video thumbnail
+        passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -f" . ($keepratio? "" : " -a"));
     } else {
-        // load source image
-        if ($extension == "jpg" || $extension == "jpeg")
-            $source = ImageCreateFromJPEG($filename);
-        else if ($extension == "gif")
-            $source = ImageCreateFromGIF($filename);
-        else if ($extension == "png")
-            $source = ImageCreateFromPNG($filename);
+        // Image thumbnail
+        list($width_orig, $height_orig) = GetImageSize($filename);
 
         if ($keepratio) {
             // Get new dimensions
-            list($width_orig, $height_orig) = getimagesize($filename);
-
             $ratio_orig = $width_orig/$height_orig;
 
-            if ($width/$height > $ratio_orig) {
-               $width = $height*$ratio_orig;
-            } else {
+            if ($width_orig > $height_orig) {
                $height = $width/$ratio_orig;
-            }
-            $target = ImageCreatetruecolor($width,$height);
-            imagecopyresampled($target, $source, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
-        } else {
-            // square thumbnail
-            $imgsize = GetImageSize($filename);
-            $width = $imgsize[0];
-            $height = $imgsize[1];
-            if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
-                $xoord = ceil(($width-$height)/2);
-                $width = $height;      // Then we read a square frame that  equals the width
             } else {
-                $yoord = ceil(($height-$width)/2);
-                $height = $width;
+               $width = $height*$ratio_orig;
             }
-            $target = ImageCreatetruecolor($size,$size);
-            imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
+       } else {
+            // square thumbnail
+            if ($width_orig > $height_orig) { // If the width is greater than the height it’s a horizontal picture
+                $xoord = ceil(($width_orig-$height_orig)/2);
+                $width_orig = $height_orig;      // Then we read a square frame that  equals the width
+            } else {
+                $yoord = ceil(($height_orig-$width_orig)/2);
+                $height_orig = $width_orig;
+            }
         }
-        imagedestroy($source);
 
-        if ($extension == "jpg" || $extension == "jpeg" || $extension == "png")
-            ImageJPEG($target,null,90);
-        else if ($extension == "gif")
-            ImageGIF($target,null,90);
-        imagedestroy($target);
+        if($keepratio && $size > $height_orig && $size > $width_orig) {
+            readfile($filename);
+            $outfile = null; //don't cache images that are equal to originals
+        } else {
+            // load source image
+            if ($extension == "jpg" || $extension == "jpeg")
+                $source = ImageCreateFromJPEG($filename);
+            else if ($extension == "gif")
+                $source = ImageCreateFromGIF($filename);
+            else if ($extension == "png")
+                $source = ImageCreateFromPNG($filename);
+
+            $target = ImageCreatetruecolor($width,$height);
+            imagecopyresampled($target,$source, 0,0, $xoord,$yoord, $width,$height, $width_orig,$height_orig);
+            imagedestroy($source);
+
+            if ($extension == "jpg" || $extension == "jpeg" || $extension == "png")
+                ImageJPEG($target,null,90);
+            else if ($extension == "gif")
+                ImageGIF($target,null,90);
+            imagedestroy($target);
+        }
     }
 
-    if($config['caching']){
+    if($outfile)
         file_put_contents($outfile,ob_get_contents());
-    }
 
     ob_end_flush();
 }
@@ -126,7 +126,7 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
 
 $_GET['filename'] = "./" . $_GET['filename'];
 $_GET['size']=filter_var($_GET['size'], FILTER_VALIDATE_INT);
-if ($_GET['size'] == false) $_GET['size'] = 120;
+if ($_GET['size'] == false) $_GET['size'] = 1024;
 
 // Display error image if file isn't found
 if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
@@ -164,10 +164,15 @@ if ( in_array($extension, $config['supported_image_types']) || in_array($extensi
 }
 
 // Create paths for different picture versions
-$md5sum = md5($_GET['filename']);
-$thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
-if(!file_exists($config['cache_path']) && $config['caching'])
-    mkdir($config['cache_path']);
+$thumbnail = null;
+
+if($config['caching']) {
+    $md5sum = md5($_GET['filename']);
+    $thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+    if(!file_exists($config['cache_path']))
+        mkdir($config['cache_path']);
+}
 
 create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
+
 ?>
