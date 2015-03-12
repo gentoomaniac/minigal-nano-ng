@@ -228,7 +228,7 @@ if ($handle = opendir($currentdir))
                                $config['small_size'] . "' rel='lightbox[billeder]' title='" . $img_captions[$file] .
                                "'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir .
                                "/" . $file . "&amp;size=" . $config['thumb_size'] . "&amp;format=square' alt='" .
-                               $i18n['label_loading'] . "' /></a></li>"
+                               $i18n['label_loading'] . "' /></a><em>" . padstring($file, $label_max_length) . "</em></li>"
                 );
 
             } else if (in_array($extension, $config['supported_video_types'])) {
@@ -242,7 +242,7 @@ if ($handle = opendir($currentdir))
                     "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='" .
                                $img_captions[$file]."'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" .
                                $thumbdir . "/" . $file . "&amp;size=" . $config['thumb_size'] . "&amp;format=square' alt='" .
-                               $i18n['label_loading'] . "' /></a></li>"
+                               $i18n['label_loading'] . "' /></a><em>" . padstring($file, $label_max_length) . "</em></li>"
                 );
             }
             // Other filetypes
