@@ -122,12 +122,14 @@ function checkpermissions($file) {
 // CHECK FOR NEW VERSION
 //-----------------------
 if (ini_get('allow_url_fopen') == "1" && $config['check_update']) {
-    $file = @fopen ($config['check_update_url'], "r");
-    $server_version = fgets ($file, 1024);
-    if (mb_strlen($server_version) == 5 ) { //If string retrieved is exactly 5 chars then continue
-        if (version_compare($server_version, $config['version'], '>')) $messages = sprintf($i18n['msg_update_available'], $server_version);
+    $server_version = preg_grep('/^\s*\$config\s*\[\s*\'version\'\s*\]\s*=\s*".*";\s*$/', file($config['check_update_url']));
+    if(count($server_version)==1)
+    {
+        $server_version=preg_replace('/^\s*\$config\s*\[\s*\'version\'\s*\]\s*=\s*"(.*)";\s*$/', '\\1', implode($server_version));
+        if (mb_strlen($server_version) == 5 ) { //If string retrieved is exactly 5 chars then continue
+            if (version_compare($server_version, $config['version'], '>')) $messages = sprintf($i18n['msg_update_available'], $server_version);
+        }
     }
-    fclose($file);
 }
 
 mb_internal_encoding("UTF-8");
