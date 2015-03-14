@@ -34,4 +34,5 @@ $i18n['error_loading_internal'] = "This file should not be loaded directly!";
 $i18n['error_no_exif_support']  = "Error: PHP EXIF is not available. Set &#36;display_exif = 0; in config.php to remove this message";
 $i18n['error_file_permissions'] = "At least one file or folder has wrong permissions";
 
+return "MINIGAL_INCLUDE_OK";
 ?>

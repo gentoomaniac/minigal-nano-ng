@@ -21,7 +21,8 @@ if(!defined("MINIGAL_INTERNAL")) {
     define("MINIGAL_INTERNAL", true);
 }
 require("config.php");
-require("i18n/".$config['i18n'].".php");
+if((include("i18n/".$config['i18n'].".php")) != "MINIGAL_INCLUDE_OK")
+    die("Error: Could not include language file i18n/".$config['i18n'].".php");
 
 //-----------------------
 // Debug stuff

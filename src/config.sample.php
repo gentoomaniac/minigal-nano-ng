@@ -30,7 +30,7 @@ $config['sorting_folders']        = "name"; // Sort folders by: [name][date]
 $config['sorting_files']          = "name"; // Sort files by: [name][date][size]
 $config['sortdir_folders']        = "ASC"; // Sort direction of folders: [ASC][DESC]
 $config['sortdir_files']          = "ASC"; // Sort direction of files: [ASC][DESC]
-$config['i18n']                   = "en_us";
+$config['i18n']                   = "en_US";
 
 //ADVANCED SETTINGS
 $config['thumb_size']             = 120; //Thumbnail height/width (square thumbs). Changing this will most likely require manual altering of the template file to make it look properly!
