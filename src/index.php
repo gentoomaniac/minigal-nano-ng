@@ -288,7 +288,7 @@ if (sizeof($dirs) > 0)
         $date[$key] = mb_strtolower($row['date']);
     }
     if (mb_strtoupper($config['sortdir_folders']) == "DESC") array_multisort($$config['sorting_folders'], SORT_DESC, $name, SORT_DESC, $dirs);
-    else array_multisort($$sorting_folders, SORT_ASC, $name, SORT_ASC, $dirs);
+    else array_multisort($$config['sorting_folders'], SORT_ASC, $name, SORT_ASC, $dirs);
 }
 if (sizeof($files) > 0)
 {
