@@ -30,7 +30,7 @@ $config['sorting_folders']        = "name"; // Sort folders by: [name][date]
 $config['sorting_files']          = "name"; // Sort files by: [name][date][size]
 $config['sortdir_folders']        = "ASC"; // Sort direction of folders: [ASC][DESC]
 $config['sortdir_files']          = "ASC"; // Sort direction of files: [ASC][DESC]
-$config['i18n']                   = "en_us";
+$config['i18n']                   = "en_US";
 
 //ADVANCED SETTINGS
 $config['thumb_size']             = 120; //Thumbnail height/width (square thumbs). Changing this will most likely require manual altering of the template file to make it look properly!
@@ -43,7 +43,7 @@ $config['supported_image_types']  = array("jpg", "jpeg", "png", "gif"); //List o
 $config['supported_video_types']  = array("mp4", "mts", "mov", "m4v", "m4a", "aiff", "avi", "caf", "dv", "qtz", "flv"); //List of supported video extensions
 $config['memory_limit']           = "512M";
 $config['check_update']           = true;
-$config['check_update_url']       = "http://www.minigal.dk/minigalnano_version.php";
+$config['check_update_url']       = "https://raw.githubusercontent.com/gentoomaniac/minigal-nano-ng/master/src/config.sample.php";
 $config['debug']                  = false;
 
 //THUMBNAIL CACHING
