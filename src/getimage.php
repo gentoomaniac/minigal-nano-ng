@@ -21,36 +21,37 @@ Example: <img src="createthumb.php?filename=photo.jpg&amp;width=100&amp;height=1
 */
 //  error_reporting(E_ALL);
 
-require("config_default.php");
-include("config.php");
+if(!defined("MINIGAL_INTERNAL")) {
+    define("MINIGAL_INTERNAL", true);
+}
 
+require("config.php");
+ini_set("memory_limit",$config['memory_limit']);
 
-function rotate_image($filename) {
+function rotate_image($filename, $target) {
     // Rotate JPG pictures
-    if (preg_match("/\.jpg$|\.jpeg$/i", $filename)) {
-        if (function_exists('exif_read_data') && function_exists('imagerotate')) {
-            $exif = exif_read_data($filename);
-            if (array_key_exists('IFD0', $exif)) {
-                $ort = $exif['IFD0']['Orientation'];
-                $degrees = 0;
-                switch($ort) {
-                    case 6: // 90 rotate right
-                        $degrees = 270;
-                    break;
-                    case 8:    // 90 rotate left
-                        $degrees = 90;
-                    break;
-                }
-                if ($degrees != 0)  return imagerotate($target, $degrees, 0);
+    if (preg_match("/\.jpg$|\.jpeg$/i", $filename) && function_exists('exif_read_data') && function_exists('imagerotate')) {
+        $exif = exif_read_data($filename);
+        if (array_key_exists('IFD0', $exif)) {
+            $ort = $exif['IFD0']['Orientation'];
+            $degrees = 0;
+            switch($ort) {
+                case 6: // 90 rotate right
+                    $degrees = 270;
+                break;
+                case 8:    // 90 rotate left
+                    $degrees = 90;
+                break;
             }
+            if ($degrees != 0)  return imagerotate($target, $degrees, 0);
         }
     }
 
-return "";
+return $target;
 }
 
 function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio = true) {
-    global $supported_video_types;
+    global $config;
     // Define variables
     $target = rotate_image($filename);
     $xoord = 0;
@@ -58,72 +59,81 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
     $height = $size;
     $width = $size;
 
-    if ( in_array($extension, $supported_video_types) ) {
-        if($outfile == null)
-            passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -a -f");
-        else
-            exec("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o " . escapeshellarg($outfile) . " -s " . escapeshellarg($size) . " -c jpeg -a -f");
+    if ($config['caching'] && is_file($outfile)) {
+        readfile($outfile);     //Use the cache
         return;
+    }
+
+    ob_start();
+
+    if ( in_array($extension, $config['supported_video_types']) ) {
+        // Video thumbnail
+        passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -f" . ($keepratio? "" : " -a"));
     } else {
-        // load source image
-        if ($extension == "jpg" || $extension == "jpeg")
-            $source = ImageCreateFromJPEG($filename);
-        else if ($extension == "gif")
-            $source = ImageCreateFromGIF($filename);
-        else if ($extension == "png")
-            $source = ImageCreateFromPNG($filename);
+        // Image thumbnail
+        list($width_orig, $height_orig) = GetImageSize($filename);
 
         if ($keepratio) {
             // Get new dimensions
-            list($width_orig, $height_orig) = getimagesize($filename);
-
             $ratio_orig = $width_orig/$height_orig;
 
-            if ($width/$height > $ratio_orig) {
-               $width = $height*$ratio_orig;
-            } else {
+            if ($width_orig > $height_orig) {
                $height = $width/$ratio_orig;
-            }
-            $target = ImageCreatetruecolor($width,$height);
-            imagecopyresampled($target, $source, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
-        } else {
-            // square thumbnail
-            $imgsize = GetImageSize($filename);
-            $width = $imgsize[0];
-            $height = $imgsize[1];
-            if ($width > $height) { // If the width is greater than the height it’s a horizontal picture
-                $xoord = ceil(($width-$height)/2);
-                $width = $height;      // Then we read a square frame that  equals the width
             } else {
-                $yoord = ceil(($height-$width)/2);
-                $height = $width;
+               $width = $height*$ratio_orig;
             }
-            $target = ImageCreatetruecolor($size,$size);
-            imagecopyresampled($target,$source,0,0,$xoord,$yoord,$size,$size,$width,$height);
+       } else {
+            // square thumbnail
+            if ($width_orig > $height_orig) { // If the width is greater than the height it’s a horizontal picture
+                $xoord = ceil(($width_orig-$height_orig)/2);
+                $width_orig = $height_orig;      // Then we read a square frame that  equals the width
+            } else {
+                $yoord = ceil(($height_orig-$width_orig)/2);
+                $height_orig = $width_orig;
+            }
         }
-        imagedestroy($source);
 
-        if ($extension == "jpg" || $extension == "jpeg")
-            ImageJPEG($target,$outfile,90);
-        else if ($extension == "gif")
-            ImageGIF($target,$outfile,90);
-        else if ($extension == "png")
-            ImageJPEG($target,$outfile,90); // Using ImageJPEG on purpose
-        imagedestroy($target);
+        if($keepratio && $size > $height_orig && $size > $width_orig) {
+            readfile($filename);
+            $outfile = null; //don't cache images that are equal to originals
+        } else {
+            // load source image
+            if ($extension == "jpg" || $extension == "jpeg")
+                $source = ImageCreateFromJPEG($filename);
+            else if ($extension == "gif")
+                $source = ImageCreateFromGIF($filename);
+            else if ($extension == "png")
+                $source = ImageCreateFromPNG($filename);
+
+            $target = ImageCreatetruecolor($width,$height);
+            imagecopyresampled($target,$source, 0,0, $xoord,$yoord, $width,$height, $width_orig,$height_orig);
+            imagedestroy($source);
+
+            if ($extension == "jpg" || $extension == "jpeg" || $extension == "png")
+                ImageJPEG($target,null,90);
+            else if ($extension == "gif")
+                ImageGIF($target,null,90);
+            imagedestroy($target);
+        }
     }
+
+    if($outfile)
+        file_put_contents($outfile,ob_get_contents());
+
+    ob_end_flush();
 }
 
 
 $_GET['filename'] = "./" . $_GET['filename'];
 $_GET['size']=filter_var($_GET['size'], FILTER_VALIDATE_INT);
-if ($_GET['size'] == false) $_GET['size'] = 120;
+if ($_GET['size'] == false) $_GET['size'] = 1024;
 
 // Display error image if file isn't found
 if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/questionmark.jpg');
     ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimg);
+    imagedestroy($errorimage);
     exit;
 }
 
@@ -132,12 +142,12 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
     ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimg);
+    imagedestroy($errorimage);
     exit;
 }
 
 $extension = strtolower(preg_replace('/^.*\./', '', $_GET['filename']));
-if ( in_array($extension, $supported_image_types) || in_array($extension, $supported_video_types) ) {
+if ( in_array($extension, $config['supported_image_types']) || in_array($extension, $config['supported_video_types']) ) {
     if ($extension == 'gif') {
         header('Content-type: image/gif');
         $cleanext = 'gif';
@@ -149,34 +159,20 @@ if ( in_array($extension, $supported_image_types) || in_array($extension, $suppo
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
     ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimg);
+    imagedestroy($errorimage);
     exit;
 }
 
 // Create paths for different picture versions
-$md5sum = md5($_GET['filename']);
-$thumbnail = $cache_path . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
-if(!file_exists($cache_path) && $caching)
-    mkdir($cache_path);
+$thumbnail = null;
 
-if (!is_file($thumbnail) && $caching) {
-    create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
+if($config['caching']) {
+    $md5sum = md5($_GET['filename']);
+    $thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+    if(!file_exists($config['cache_path']))
+        mkdir($config['cache_path']);
 }
 
-if ( $cleanext == 'gif') {
-    $img = ImageCreateFromGIF($thumbnail);
-    if(!$img) {
-        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
-        exit;
-    }
-    ImageGIF($img,null,90);
-} else {
-    $img = ImageCreateFromJPEG($thumbnail);
-    if(!$img) {
-        create_thumb($_GET['filename'], $extension, null, $_GET['size']);
-        exit;
-    }
-    ImageJPEG($img,null,90);
-}
-imagedestroy($img);
+create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
+
 ?>

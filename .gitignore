@@ -1,3 +1,5 @@
 src/photos/*
 src/thumbnails/*
 src/small/*
+
+src/config.php
