@@ -37,52 +37,52 @@ $thumbnailer_version = check_ffmpegthumbnailer();
 <title><?php echo $i18n['syscheck_page_title']; ?></title>
 <style type="text/css">
 body {
-	background-color: #daddd8;
-	font: 12px Arial, Tahoma, "Times New Roman", serif;
+    background-color: #daddd8;
+    font: 12px Arial, Tahoma, "Times New Roman", serif;
 }
 h1 {
-	font-size: 30px;
-	margin: 20px 0 5px 0;
-	letter-spacing: -2px;
+    font-size: 30px;
+    margin: 20px 0 5px 0;
+    letter-spacing: -2px;
 }
 div {
-	line-height: 20px;
+    line-height: 20px;
 }
 .left {
-	width: 300px;
-	display: inline-table;
-	background-color: #fdffbe;
-	padding: 2px;
+    width: 300px;
+    display: inline-table;
+    background-color: #fdffbe;
+    padding: 2px;
 }
 .middle-neutral {
-	font-weight: bold;
-	text-align: center;
-	width: 100px;
-	display: inline-table;
-	background-color: #fdffbe;
-	padding: 2px;
+    font-weight: bold;
+    text-align: center;
+    width: 100px;
+    display: inline-table;
+    background-color: #fdffbe;
+    padding: 2px;
 }
 .middle-no {
-	font-weight: bold;
-	text-align: center;
-	width: 100px;
-	display: inline-table;
-	background-color: #ff8181;
-	padding: 2px;
+    font-weight: bold;
+    text-align: center;
+    width: 100px;
+    display: inline-table;
+    background-color: #ff8181;
+    padding: 2px;
 }
 .middle-yes {
-	font-weight: bold;
-	text-align: center;
-	width: 100px;
-	display: inline-table;
-	background-color: #98ffad;
-	padding: 2px;
+    font-weight: bold;
+    text-align: center;
+    width: 100px;
+    display: inline-table;
+    background-color: #98ffad;
+    padding: 2px;
 }
 .right {
-	width: 600px;
-	display: inline-table;
-	background-color: #eaf1ea;
-	padding: 2px;
+    width: 600px;
+    display: inline-table;
+    background-color: #eaf1ea;
+    padding: 2px;
 }
 </style>
 <body>
@@ -91,10 +91,10 @@ div {
 <?php echo $i18n['syscheck_php_title']; ?>
 </div>
 <div class="<?php if(version_compare(phpversion(), "4.0", '>')) echo 'middle-yes'; else echo 'middle-no' ?>">
-	<?php echo phpversion(); ?>
+    <?php echo phpversion(); ?>
 </div>
 <div class="right">
-	<?php echo $i18n['syscheck_php_desc']; ?>
+    <?php echo $i18n['syscheck_php_desc']; ?>
 </div>
 <br />
 
@@ -102,7 +102,7 @@ div {
     <?php echo $i18n['syscheck_gd_title']; ?>
 </div>
 <div class="<?php if($gd == "Yes") echo 'middle-yes'; else echo 'middle-no' ?>">
-	<?php echo $gd; ?>
+    <?php echo $gd; ?>
 </div>
 <div class="right">
     <?php echo $i18n['syscheck_gd_desc']; ?>
@@ -113,7 +113,7 @@ div {
     <?php echo $i18n['syscheck_exif_title']; ?>
 </div>
 <div  class="<?php if($exif == "Yes") echo 'middle-yes'; else echo 'middle-neutral' ?>">
-	<?php echo $exif; ?>
+    <?php echo $exif; ?>
 </div>
 <div class="right">
     <?php echo $i18n['syscheck_exif_desc']; ?>
@@ -124,7 +124,7 @@ div {
 <?php echo $i18n['syscheck_videothumb_title']; ?>
 </div>
 <div class="<?php if($thumbnailer_version == "No") echo 'middle-no'; else echo 'middle-yes' ?>">
-	<?php echo $thumbnailer_version; ?>
+    <?php echo $thumbnailer_version; ?>
 </div>
 <div class="right">
     <?php echo $i18n['syscheck_videothumb_desc']; ?>
@@ -135,7 +135,7 @@ div {
     <?php echo $i18n['syscheck_conf_title']; ?>
 </div>
 <div class="<?php if($config_exists) echo 'middle-no'; else echo 'middle-yes' ?>">
-	<?php clearstatcache(null, "config.php");echo decoct( fileperms("config.php") & 0777 ); ?>
+    <?php clearstatcache(null, "config.php");echo decoct( fileperms("config.php") & 0777 ); ?>
 </div>
 <div class="right">
     <?php echo $i18n['syscheck_conf_desc']; ?>
@@ -146,7 +146,7 @@ div {
     <?php echo $i18n['syscheck_mem_title']; ?>
 </div>
 <div class="middle-neutral">
-	<?php echo ini_get("memory_limit"); ?>
+    <?php echo ini_get("memory_limit"); ?>
 </div>
 <div class="right">
     <?php echo $i18n['syscheck_mem_desc']; ?>
@@ -157,7 +157,7 @@ div {
     <?php echo $i18n['syscheck_versioncheck_title']; ?>
 </div>
 <div class="middle-neutral">
-	<?php echo $update ?>
+    <?php echo $update ?>
 </div>
 <div class="right">
     <?php echo $i18n['syscheck_versioncheck_desc']; ?>
