@@ -6,9 +6,10 @@ if(!defined("MINIGAL_INTERNAL")) {
 
 $config_exists = ((include "config.php") == 'OK');
 
-include("i18n/en_US.php");
-if((include("i18n/".$config['i18n'].".php")) != "MINIGAL_INCLUDE_OK")
-    die("Error: Could not include language file i18n/".$config['i18n'].".php");
+require("i18n/en_US.php");
+if (array_key_exists('i18n', $config))
+    if((include("i18n/".$config['i18n'].".php")) != "MINIGAL_INCLUDE_OK")
+        echo "Error: Could not include language file i18n/".$config['i18n'].".php";
 
 $exif = "No";
 $gd = "No";
@@ -134,7 +135,7 @@ div {
 <div class="left">
     <?php echo $i18n['syscheck_conf_title']; ?>
 </div>
-<div class="<?php if($config_exists) echo 'middle-no'; else echo 'middle-yes' ?>">
+<div class="<?php if($config_exists) echo 'middle-yes'; else echo 'middle-no' ?>">
     <?php clearstatcache(null, "config.php");echo decoct( fileperms("config.php") & 0777 ); ?>
 </div>
 <div class="right">

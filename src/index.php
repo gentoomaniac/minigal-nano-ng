@@ -20,10 +20,14 @@ Please enjoy this free script!
 if(!defined("MINIGAL_INTERNAL")) {
     define("MINIGAL_INTERNAL", true);
 }
-require("config.php");
-include("i18n/en_US.php");
-if((include("i18n/".$config['i18n'].".php")) != "MINIGAL_INCLUDE_OK")
-    die("Error: Could not include language file i18n/".$config['i18n'].".php");
+if (! ((include("config.php")) == 'OK') ) {
+    header("Location: system_check.php"); /* Redirect browser */
+    exit();
+}
+require("i18n/en_US.php");
+if (array_key_exists('i18n', $config))
+    if((include("i18n/".$config['i18n'].".php")) != "MINIGAL_INCLUDE_OK")
+        echo "Error: Could not include language file i18n/".$config['i18n'].".php";
 
 //-----------------------
 // Debug stuff
