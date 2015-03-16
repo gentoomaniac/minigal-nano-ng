@@ -20,7 +20,7 @@ Please enjoy this free script!
 if(!defined("MINIGAL_INTERNAL")) {
     define("MINIGAL_INTERNAL", true);
 }
-if (! ((include("config.php")) == 'OK') ) {
+if (! ((include("config.php")) == 'MINIGAL_INCLUDE_OK') ) {
     header("Location: system_check.php"); /* Redirect browser */
     exit();
 }

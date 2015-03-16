@@ -4,7 +4,7 @@ if(!defined("MINIGAL_INTERNAL")) {
     define("MINIGAL_INTERNAL", true);
 }
 
-$config_exists = ((include "config.php") == 'OK');
+$config_exists = ((include "config.php") == 'MINIGAL_INCLUDE_OK');
 
 require("i18n/en_US.php");
 if (array_key_exists('i18n', $config))

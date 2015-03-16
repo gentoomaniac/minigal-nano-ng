@@ -54,4 +54,6 @@ $config['small_enabled']          = true;
 $config['small_size']             = 1024;
 
 $config['version']                = "0.3.5";
+
+return 'MINIGAL_INCLUDE_OK';
 ?>
