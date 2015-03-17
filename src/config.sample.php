@@ -34,7 +34,6 @@ $config['i18n']                   = "en_US";
 
 //ADVANCED SETTINGS
 $config['thumb_size']             = 120; //Thumbnail height/width (square thumbs). Changing this will most likely require manual altering of the template file to make it look properly!
-$config['small_size']             = 1024; //Size (width) of the images displayed in the gallery. Images are scaled proportionally
 $config['cache_path']             = "/tmp/imagecache"; //Cache for resized images (thumbnails, previews). Must be writable by the httpd user.
 $config['label_max_length']       = 30; //Maximum chars of a folder name that will be displayed on the folder thumbnail
 $config['display_exif']           = 1;
@@ -51,7 +50,7 @@ $config['caching']                = true;
 
 //SMALL CACHE
 $config['small_enabled']          = true;
-$config['small_size']             = 1024;
+$config['small_size']             = 1024; //Size (width) of the images displayed in the gallery. Images are scaled proportionally
 
 $config['version']                = "0.3.5";
 

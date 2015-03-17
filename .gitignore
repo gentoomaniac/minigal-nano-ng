@@ -1,5 +1,2 @@
-src/photos/*
-src/thumbnails/*
-src/small/*
-
+src/photos
 src/config.php
