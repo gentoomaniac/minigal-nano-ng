@@ -34,5 +34,20 @@ $i18n['error_loading_internal'] = "Этот файл не предполагае
 $i18n['error_no_exif_support']  = "Error: Расширение PHP EXIF не доступно. Установите &#36;display_exif = 0; в config.php, чтобы убрать это сообщение";
 $i18n['error_file_permissions'] = "Как минимум у одного файла или директории недостаточные права доступа";
 
+$i18n['syscheck_page_title']    = "MiniGal Nano NG - Проверка системы";
+$i18n['syscheck_php_title']     = "Версия PHP";
+$i18n['syscheck_php_desc']      = 'Необходим скриптовый язык программирования <a href="http://www.php.net/" target="_blank">PHP</a> версии 4.0 или выше';
+$i18n['syscheck_gd_title']      = 'Поддержка библиотеки GD';
+$i18n['syscheck_gd_desc']       = '<a href="http://www.boutell.com/gd/" target="_blank">Библиотека GD</a> используется для создания миниатюр. Встроена в PHP начиная с версии 4.3';
+$i18n['syscheck_exif_title']    = 'Поддержка EXIF';
+$i18n['syscheck_exif_desc']     = 'Возможность получения и отображения информации <a href="http://en.wikipedia.org/wiki/Exif" target="_blank">EXIF</a>. Не обязательно';
+$i18n['syscheck_videothumb_title'] = 'Поддервка миниатюр видеофайлов';
+$i18n['syscheck_videothumb_desc']  = '<a href="https://code.google.com/p/ffmpegthumbnailer/" target="_blank">ffmpgthumbnailer</a> используется для создания миниатюр видеофайлов';
+$i18n['syscheck_conf_title']    = 'Конфигурация';
+$i18n['syscheck_conf_desc']     = 'Проверка, что файл конфигурации config.php существует и доступен для подключения';
+$i18n['syscheck_mem_title']     = 'Ограничение памяти PHP';
+$i18n['syscheck_mem_desc']      = 'Память нужна для построения миниатюр. Чем больше изображение, тем больше памяти нужно';
+$i18n['syscheck_versioncheck_title'] = 'Проверка обновлений';
+$i18n['syscheck_versioncheck_desc']  = 'Возможность автоматической проверки новых версий MiniGal Nano NG отображения уведомления. Не обязательно';
 return "MINIGAL_INCLUDE_OK";
 ?>
