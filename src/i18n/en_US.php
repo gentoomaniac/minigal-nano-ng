@@ -44,7 +44,7 @@ $i18n['syscheck_exif_desc']     = 'Ability to extract and display <a href="http:
 $i18n['syscheck_videothumb_title'] = 'Video thumbnail support';
 $i18n['syscheck_videothumb_desc']  = '<a href="https://code.google.com/p/ffmpegthumbnailer/" target="_blank">ffmpgthumbnailer</a> is used to create thumbnails of supported video files.';
 $i18n['syscheck_conf_title']    = 'Configuration';
-$i18n['syscheck_conf_desc']     = 'Check if configuration file exists and the config file is includable.';
+$i18n['syscheck_conf_desc']     = 'Check if configuration file config.php exists and the config file is includable.';
 $i18n['syscheck_mem_title']     = 'PHP memory limit';
 $i18n['syscheck_mem_desc']      = 'Memory is needed to create thumbnails. Bigger images uses more memory';
 $i18n['syscheck_versioncheck_title'] = 'New version check';
