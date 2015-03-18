@@ -224,8 +224,8 @@ if ($handle = opendir($currentdir))
                 $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
 
                 //Read EXIF
-                if ($display_exif == 1)
-                    $img_captions[$file] .= "<br />" .readEXIF($currentdir . "/" . $file);
+                if ($config['display_exif'] == 1)
+                    $img_captions[$file] .= readEXIF($currentdir . "/" . $file);
 
                 checkpermissions($currentdir . "/" . $file);
                 $files[] = array (
