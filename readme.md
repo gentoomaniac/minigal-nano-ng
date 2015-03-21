@@ -21,6 +21,6 @@ See a list of original features [here](http://www.minigal.dk/minigal-nano.html)
 * thumbnail caching
 * reduced-size image preview
 * HTML5 video support (.mp4)
+* fullscreen view
 
 ### To come
-* fullscreen view
