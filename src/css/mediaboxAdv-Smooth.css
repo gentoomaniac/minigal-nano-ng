@@ -133,7 +133,7 @@
 	padding: 10px 0 0;
 }
 
-#mbTitle, #mbPrevLink, #mbNextLink, #mbCloseLink {
+#mbTitle, #mbPrevLink, #mbNextLink, #mbCloseLink, #mbFullScreen {
 	display: inline;
 	color: #000;
 	font-weight: bold;
@@ -154,7 +154,7 @@
 	font-size: 0.8em;
 }
 
-#mbPrevLink, #mbNextLink, #mbCloseLink {
+#mbPrevLink, #mbNextLink, #mbCloseLink, #mbFullScreen {
 	float: right;
 	outline: none;
 	font-weight: normal;
@@ -162,13 +162,13 @@
 	padding: 4px 2px;
 }
 
-#mbPrevLink b, #mbNextLink b, #mbCloseLink b {
+#mbPrevLink b, #mbNextLink b, #mbCloseLink b, #mbFullScreen b {
 	color: #222;
 	font-weight: bold;
 	text-decoration: underline;
 }
 
-#mbPrevLink big, #mbNextLink big, #mbCloseLink big {
+#mbPrevLink big, #mbNextLink big, #mbCloseLink big, #mbFullScreen big {
 	color: #222;
 	font-size: 1.6em;
 	line-height: 0.6em;

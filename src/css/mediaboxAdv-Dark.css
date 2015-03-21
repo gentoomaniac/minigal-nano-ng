@@ -93,9 +93,10 @@
 	color: #999;
 	min-height: 20px;
 	padding: 10px 0 0;
+	width: 100%;
 }
 
-#mbTitle, #mbPrevLink, #mbNextLink, #mbCloseLink {
+#mbTitle, #mbPrevLink, #mbNextLink, #mbCloseLink, #mbFullScreen {
 	display: inline;
 	color: #fff;
 	font-weight: bold;
@@ -114,22 +115,23 @@
 	color: #999;
 	line-height: 1.6em;
 	font-size: 0.8em;
+	width: 100%;
 }
 
-#mbPrevLink, #mbNextLink, #mbCloseLink {
+#mbPrevLink, #mbNextLink, #mbCloseLink, #mbFullScreen {
 	float: right;
 	outline: none;
 	margin: 0 0 0 10px;
 	font-weight: normal;
 }
 
-#mbPrevLink b, #mbNextLink b, #mbCloseLink b {
+#mbPrevLink b, #mbNextLink b, #mbCloseLink b, #mbFullScreen b {
 	color: #eee;
 	font-weight: bold;
 	text-decoration: underline;
 }
 
-#mbPrevLink big, #mbNextLink big, #mbCloseLink big {
+#mbPrevLink big, #mbNextLink big, #mbCloseLink big, #mbFullScreen big {
 	color: #eee;
 	font-size: 1.4em;
 /*	line-height: 0.9em;*/
