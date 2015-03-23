@@ -27,9 +27,9 @@ var Mediabox;
 	// Global variables, accessible to Mediabox only
 	var options, mediaArray, activeMedia, prevMedia, nextMedia, top, mTop, left, mLeft, winWidth, winHeight, fx, preload, preloadPrev = new Image(), preloadNext = new Image(),
 	// DOM elements
-	overlay, center, media, bottom, captionSplit, title, caption, number, prevLink, nextLink,
+	overlay, center, media, bottom, captionSplit, title, caption, number, prevLink, nextLink, fullscreen, fakefullscreen = false, isFullScreen,
 	// Mediabox specific vars
-	URL, WH, WHL, elrel, mediaWidth, mediaHeight, mediaType = "none", mediaSplit, mediaId = "mediaBox", margin, marginBottom;
+	URL, WH, WHL, elrel, mediaWidth, mediaHeight, mediaType = "none", mediaSplit, mediaId = "mediaBox", margin, marginBottom, botHeight, centerPadding, origWidth, origHeight;
 
 	/*	Initialization	*/
 
@@ -46,6 +46,7 @@ var Mediabox;
 			media = new Element("div", {id: "mbMedia"}).inject(container, "inside");
 		bottom = new Element("div", {id: "mbBottom"}).inject(center, "inside").adopt(
 			closeLink = new Element("a", {id: "mbCloseLink", href: "#"}).addEvent("click", close),
+			fullscreen = new Element("a", {id: "mbFullScreen", href: "#"}).addEvent("click", toggleFullScreen),
 			nextLink = new Element("a", {id: "mbNextLink", href: "#"}).addEvent("click", next),
 			prevLink = new Element("a", {id: "mbPrevLink", href: "#"}).addEvent("click", previous),
 			title = new Element("div", {id: "mbTitle"}),
@@ -69,18 +70,31 @@ var Mediabox;
 
 		recenter: function(){	// Thanks to Garo Hussenjian (Xapnet Productions http://www.xapnet.com) for suggesting this addition
 			if (center && !Browser.Platform.ios) {
-				left = window.getScrollLeft() + (window.getWidth()/2);
-				center.setStyles({left: left, marginLeft: -(mediaWidth/2)-margin});
-//				top = window.getScrollTop() + (window.getHeight()/2);
-//				margin = center.getStyle('padding-left').toInt()+media.getStyle('margin-left').toInt()+media.getStyle('padding-left').toInt();
-//				center.setStyles({top: top, left: left, marginTop: -(mediaHeight/2)-margin, marginLeft: -(mediaWidth/2)-margin});
+				resize(false);
+			}
+		},
+
+		fscreen: function(){
+			isFullScreen = fakefullscreen || document.fullscreenElement==center || document.mozFullScreenElement==center || document.webkitFullscreenElement==center || document.msFullscreenElement==center;
+			var isOtherFullScreen = (document.fullscreenElement && document.fullscreenElement!=center) || (document.mozFullScreenElement && document.mozFullScreenElement!=center) || (document.webkitFullscreenElement && document.webkitFullscreenElement!=center) || (document.msFullscreenElement && document.msFullscreenElement!=center)
+
+			if (center && !Browser.Platform.ios && (isFullScreen || !isOtherFullScreen)) {
+				if(isFullScreen) {
+					fullscreen.set('html', options.buttonText[4]);
+					center.setStyles({padding: "0px"});
+				} else {
+					fullscreen.set('html', options.buttonText[3]);
+					center.setStyles({padding: centerPadding});
+				}
+
+				startEffect();
 			}
 		},
 
 		open: function(_mediaArray, startMedia, _options) {
 			options = {
 //			Text options (translate as needed)
-				buttonText: ['<big>&laquo;</big>','<big>&raquo;</big>','<big>&times;</big>'],		// Array defines "previous", "next", and "close" button content (HTML code should be written as entity codes or properly escaped)
+				buttonText: ['<big>&laquo;</big>','<big>&raquo;</big>','<big>&times;</big>','<big>&#8892;</big>','<big>&#8893;</big>'],		// Array defines "previous", "next", "close", "maximize" and "restore" button content (HTML code should be written as entity codes or properly escaped)
 //				buttonText: ['<big>«</big>','<big>»</big>','<big>×</big>'],
 //				buttonText: ['<b>P</b>rev','<b>N</b>ext','<b>C</b>lose'],
 				counterText: '({x} / {y})',	// Counter text, {x} = current item number, {y} = total gallery length
@@ -172,6 +186,7 @@ var Mediabox;
 			prevLink.set('html', options.buttonText[0]);
 			nextLink.set('html', options.buttonText[1]);
 			closeLink.set('html', options.buttonText[2]);
+			fullscreen.set('html', options.buttonText[3]);
 
 			if (Browser.firefox2) {	// Fixes Firefox 2 and Camino 1.6 incompatibility with opacity + flash
 				options.overlayOpacity = 1;
@@ -201,14 +216,16 @@ var Mediabox;
 			mediaArray = _mediaArray;
 			options.loop = options.loop && (mediaArray.length > 1);
 
+			document.documentElement.style.overflow = 'hidden';
 			size();
 			setup(true);
 			top = window.getScrollTop() + (window.getHeight()/2);
 			left = window.getScrollLeft() + (window.getWidth()/2);
-			margin = center.getStyle('padding-left').toInt()+media.getStyle('margin-left').toInt()+media.getStyle('padding-left').toInt();
+			margin = center.getStyle('padding-left').toInt()+media.getStyle('padding-left').toInt();//+media.getStyle('margin-left').toInt();
 			marginBottom = bottom.getStyle('margin-left').toInt()+bottom.getStyle('padding-left').toInt()+bottom.getStyle('margin-right').toInt()+bottom.getStyle('padding-right').toInt();
 
 /****/		center.setStyles({top: top, left: left, width: options.initialWidth, height: options.initialHeight, marginTop: -(options.initialHeight/2)-margin, marginLeft: -(options.initialWidth/2)-margin, display: ""});
+			centerPadding=center.getStyle('padding');
 			fx.resize = new Fx.Morph(center, {duration: options.resizeDuration, onComplete: mediaAnimate});
 			fx.overlay.start(options.overlayOpacity);
 			return changeMedia(startMedia);
@@ -316,6 +333,10 @@ var Mediabox;
 				case 39:	// Right arrow
 				case 78:	// 'n'
 					next();
+					break;
+				case 70:	// 'f'
+					toggleFullScreen();
+					break;
 			}
 		} else {
 			switch(event.code) {
@@ -338,6 +359,39 @@ var Mediabox;
 
 	function next() {
 		return changeMedia(nextMedia);
+	}
+
+	function toggleFullScreen() {
+		isFullScreen = fakefullscreen || document.fullscreenElement==center || document.mozFullScreenElement==center || document.webkitFullscreenElement==center || document.msFullscreenElement==center;
+
+		if(!isFullScreen) {
+			if (center.requestFullscreen && document.fullscreenEnabled) {
+				center.requestFullscreen();
+			} else if (center.msRequestFullscreen && document.msFullscreenEnabled) {
+				center.msRequestFullscreen();
+			} else if (center.mozRequestFullScreen && document.mozFullScreenEnabled) {
+				center.mozRequestFullScreen();
+			} else if (center.webkitRequestFullscreen && document.webkitFullscreenEnabled) {
+				center.webkitRequestFullscreen();
+			} else {
+				fakefullscreen=true;
+				Mediabox.fscreen();
+			}
+		} else {
+			if (document.exitFullscreen && document.fullscreenEnabled) {
+				document.exitFullscreen();
+			} else if (document.msExitFullscreen && document.msFullscreenEnabled) {
+				document.msExitFullscreen();
+			} else if (document.mozCancelFullScreen && document.mozFullScreenEnabled) {
+				document.mozCancelFullScreen();
+			} else if (document.webkitExitFullscreen && document.webkitFullscreenEnabled) {
+				document.webkitExitFullscreen();
+			} else {
+				fakefullscreen=false;
+				Mediabox.fscreen();
+			}
+		}
+		return false;
 	}
 
 	function changeMedia(mediaIndex) {
@@ -375,6 +429,8 @@ var Mediabox;
 //			URL = encodeURI(URL).replace("(","%28").replace(")","%29").replace("%20"," ");
 			captionSplit = mediaArray[activeMedia][1].split('::');
 
+			origWidth=mediaWidth;
+			origHeight=mediaHeight;
 // Quietube and yFrog support
 			if (URL.match(/quietube\.com/i)) {
 				mediaSplit = URL.split('v.php/');
@@ -826,29 +882,29 @@ var Mediabox;
 	function startEffect() {
 //		if (Browser.Platform.ios && (mediaType == "obj" || mediaType == "qt" || mediaType == "html")) alert("this isn't gonna work");
 //		if (Browser.Platform.ios && (mediaType == "obj" || mediaType == "qt" || mediaType == "html")) mediaType = "ios";
+		title.set('html', (options.showCaption) ? captionSplit[0] : "");
+		caption.set('html', (options.showCaption && (captionSplit.length > 1)) ? captionSplit[1] : "");
+		number.set('html', (options.showCounter && (mediaArray.length > 1)) ? options.counterText.replace(/\{x\}/, (options.countBack)?mediaArray.length-activeMedia:activeMedia+1).replace(/\{y\}/, mediaArray.length) : "");
+
+		if(origWidth=="" || origHeight=="") {
+			origWidth=mediaWidth;
+			origHeight=mediaHeight;
+		}
+		if(origWidth=="" || origHeight=="") {
+			origWidth=preload.width;
+			origHeight=preload.height;
+		}
+
 		(mediaType == "img")?media.addEvent("click", next):media.removeEvent("click", next);
 		if (mediaType == "img"){
-			mediaWidth = preload.width;
-			mediaHeight = preload.height;
 			if (options.imgBackground) {
 				media.setStyles({backgroundImage: "url("+URL+")", display: ""});
-			} else {	// Thanks to Dusan Medlin for fixing large 16x9 image errors in a 4x3 browser
-				if (mediaHeight >= winHeight-options.imgPadding && (mediaHeight / winHeight) >= (mediaWidth / winWidth)) {
-					mediaHeight = winHeight-options.imgPadding;
-					mediaWidth = preload.width = parseInt((mediaHeight/preload.height)*mediaWidth, 10);
-					preload.height = mediaHeight;
-				} else if (mediaWidth >= winWidth-options.imgPadding && (mediaHeight / winHeight) < (mediaWidth / winWidth)) {
-					mediaWidth = winWidth-options.imgPadding;
-					mediaHeight = preload.height = parseInt((mediaWidth/preload.width)*mediaHeight, 10);
-					preload.width = mediaWidth;
-				}
-				if (Browser.ie) preload = document.id(preload);
+			} else {
+				//if (Browser.ie) preload = document.id(preload);
 				if (options.clickBlock) preload.addEvent('mousedown', function(e){ e.stop(); }).addEvent('contextmenu', function(e){ e.stop(); });
 				media.setStyles({backgroundImage: "none", display: ""});
 				preload.inject(media);
 			}
-//			mediaWidth += "px";
-//			mediaHeight += "px";
 		} else if (mediaType == "inline") {
 //			if (options.overflow) media.setStyles({overflow: options.overflow});
 			media.setStyles({backgroundImage: "none", display: ""});
@@ -862,8 +918,6 @@ var Mediabox;
 		} else if (mediaType == "ios" || Browser.Platform.ios) {
 			media.setStyles({backgroundImage: "none", display: ""});
 			media.set('html', options.linkText.replace(/\{x\}/gi, URL));
-			mediaWidth = options.DefaultWidth;
-			mediaHeight = options.DefaultHeight;
 		} else if (mediaType == "url") {
 			media.setStyles({backgroundImage: "none", display: ""});
 			preload.inject(media);
@@ -875,8 +929,6 @@ var Mediabox;
 			if (Browser.Plugins.Flash.version < "8") {
 				media.setStyles({backgroundImage: "none", display: ""});
 				media.set('html', '<div id="mbError"><b>Error</b><br/>Adobe Flash is either not installed or not up to date, please visit <a href="http://www.adobe.com/shockwave/download/download.cgi?P1_Prod_Version=ShockwaveFlash" title="Get Flash" target="_new">Adobe.com</a> to download the free player.</div>');
-				mediaWidth = options.DefaultWidth;
-				mediaHeight = options.DefaultHeight;
 			} else {
 				media.setStyles({backgroundImage: "none", display: ""});
 				preload.inject(media);
@@ -885,13 +937,7 @@ var Mediabox;
 		} else {
 			media.setStyles({backgroundImage: "none", display: ""});
 			media.set('html', options.flashText);
-			mediaWidth = options.defaultWidth;
-			mediaHeight = options.defaultHeight;
 		}
-
-		title.set('html', (options.showCaption) ? captionSplit[0] : "");
-		caption.set('html', (options.showCaption && (captionSplit.length > 1)) ? captionSplit[1] : "");
-		number.set('html', (options.showCounter && (mediaArray.length > 1)) ? options.counterText.replace(/\{x\}/, (options.countBack)?mediaArray.length-activeMedia:activeMedia+1).replace(/\{y\}/, mediaArray.length) : "");
 
 //		if (options.countBack) {
 //			number.set('html', (options.showCounter && (mediaArray.length > 1)) ? options.counterText.replace(/{x}/, activeMedia + 1).replace(/{y}/, mediaArray.length) : "");
@@ -903,18 +949,59 @@ var Mediabox;
 		if ((nextMedia >= 0) && (mediaArray[nextMedia][0].match(/\.gif|\.jpg|\.jpeg|\.png|twitpic\.com/i))) preloadNext.src = mediaArray[nextMedia][0].replace(/twitpic\.com/i, "twitpic.com/show/full");
 		if (prevMedia >= 0) prevLink.style.display = "";
 		if (nextMedia >= 0) nextLink.style.display = "";
-		media.setStyles({width: mediaWidth+"px", height: mediaHeight+"px"});
-		bottom.setStyles({width: mediaWidth-marginBottom+"px"});
-		caption.setStyles({width: mediaWidth-marginBottom+"px"});
+		fullscreen.style.display = "";
 
-		mediaWidth = media.offsetWidth;
-		mediaHeight = media.offsetHeight+bottom.offsetHeight;
-		if (mediaHeight >= top+top) { mTop = -top; } else { mTop = -(mediaHeight/2); }
-		if (mediaWidth >= left+left) { mLeft = -left; } else { mLeft = -(mediaWidth/2); }
-/****/	if (options.resizeOpening) { fx.resize.start({width: mediaWidth, height: mediaHeight, marginTop: mTop-margin, marginLeft: mLeft-margin});
-/****/	} else { center.setStyles({width: mediaWidth, height: mediaHeight, marginTop: mTop-margin, marginLeft: mLeft-margin}); mediaAnimate(); }
-//		center.setStyles({width: mediaWidth, height: mediaHeight, marginTop: mTop-margin, marginLeft: mLeft-margin});
-//		mediaAnimate();
+		resize(true);
+	}
+
+	function resize(animate) {
+		isFullScreen = fakefullscreen || document.fullscreenElement==center || document.mozFullScreenElement==center || document.webkitFullscreenElement==center || document.msFullscreenElement==center;
+
+		winWidth = window.getWidth();
+		winHeight = window.getHeight();
+		left = window.getScrollLeft() + (winWidth/2);
+		top = window.getScrollTop() + (winHeight/2);
+		margin = center.getStyle('padding-left').toInt()+media.getStyle('padding-left').toInt();//+media.getStyle('margin-left').toInt();
+		botHeight = bottom.offsetHeight;
+
+		if ((mediaType == "img" && !options.imgBackground) || (mediaType == "video")){
+			mediaWidth = origWidth;
+			mediaHeight = origHeight;
+			if ((mediaHeight >= (winHeight-botHeight)-options.imgPadding || isFullScreen) && (mediaHeight / (winHeight-botHeight)) >= (mediaWidth / winWidth)) {	// Thanks to Dusan Medlin for fixing large 16x9 image errors in a 4x3 browser
+				mediaHeight = (winHeight-botHeight)-(isFullScreen?0:options.imgPadding);
+				mediaWidth = parseInt((mediaHeight/origHeight)*mediaWidth, 10);
+			} else if ((mediaWidth >= winWidth-options.imgPadding || isFullScreen) && (mediaHeight / (winHeight-botHeight)) < (mediaWidth / winWidth)) {
+				mediaWidth = winWidth-(isFullScreen?0:options.imgPadding);
+				mediaHeight = parseInt((mediaWidth/origWidth)*mediaHeight, 10);
+			}
+			preload.height = mediaHeight;
+			preload.width = mediaWidth;
+		} else if (mediaType == "ios" || Browser.Platform.ios || (mediaType == "obj" && Browser.Plugins.Flash.version < "8") || mediaWidth==0 || mediaHeight==0) {
+			mediaWidth = options.DefaultWidth;
+			mediaHeight = options.DefaultHeight;
+		}
+
+		media.setStyles({width: mediaWidth+"px", height: mediaHeight+"px", margin: "auto"});
+		if(isFullScreen) {
+			container.setStyles({"margin-top": (winHeight-botHeight-mediaHeight)/2+"px", "margin-bottom": (winHeight-botHeight-mediaHeight)/2+"px"});
+
+			mediaWidth = winWidth;
+			mediaHeight = winHeight;
+			mTop=-(mediaHeight/2);
+			mLeft=-(mediaWidth/2);
+		} else {
+			container.setStyles({"margin-top": "0px", "margin-bottom": "0px"});
+
+			mediaWidth = media.offsetWidth;
+			mediaHeight = media.offsetHeight+botHeight;
+			if (mediaHeight >= top+top) { mTop = -top; } else { mTop = -(mediaHeight/2); }
+			if (mediaWidth >= left+left) { mLeft = -left; } else { mLeft = -(mediaWidth/2); }
+		}
+
+		if(animate) {
+			if (options.resizeOpening) { fx.resize.start({width: mediaWidth, height: mediaHeight, top: top, left: left, marginTop: mTop-margin, marginLeft: mLeft-margin});
+			} else { center.setStyles({width: mediaWidth, height: mediaHeight, top: top, left: left, marginTop: mTop-margin, marginLeft: mLeft-margin}); mediaAnimate(); }
+		} else { center.setStyles({width: mediaWidth, height: mediaHeight, top: top, left: left, marginTop: mTop-margin, marginLeft: mLeft-margin}); }
 	}
 
 	function mediaAnimate() {
@@ -936,10 +1023,12 @@ var Mediabox;
 		fx.resize.cancel();
 		fx.media.cancel().set(0);
 		fx.bottom.cancel().set(0);
-		$$(prevLink, nextLink).setStyle("display", "none");
+		$$(prevLink, nextLink, fullscreen).setStyle("display", "none");
 	}
 
 	function close() {
+		isFullScreen = fakefullscreen || document.fullscreenElement==center || document.mozFullScreenElement==center || document.webkitFullscreenElement==center || document.msFullscreenElement==center;
+
 		if (activeMedia >= 0) {
 			if (mediaType == "inline" && !options.inlineClone) preload.adopt(media.getChildren());	// prevents loss of adopted data
 			preload.onload = function(){}; // $empty replacement
@@ -948,6 +1037,8 @@ var Mediabox;
 			center.setStyle("display", "none");
 			fx.overlay.chain(setup).start(0);
 		}
+		if(isFullScreen) toggleFullScreen();
+		document.documentElement.style.overflow = 'auto';
 		return false;
 	}
 })();
@@ -992,3 +1083,13 @@ Mediabox.scanPage = function() {
 };
 
 window.addEvents({domready: Mediabox.scanPage, resize: Mediabox.recenter}); // to recenter the overlay while scrolling, add "scroll: Mediabox.recenter" to the object
+if (document.fullscreenEnabled) {
+	document.addEventListener("fullscreenchange", function() {Mediabox.fscreen()}, false);
+} else if (document.msFullscreenEnabled) {
+	document.addEventListener("MSFullscreenChange", function() {Mediabox.fscreen()}, false);
+} else if (document.mozFullScreenEnabled) {
+	document.addEventListener("mozfullscreenchange", function() {Mediabox.fscreen()}, false);
+} else if (document.webkitFullscreenEnabled) {
+	document.addEventListener("webkitfullscreenchange", function() {Mediabox.fscreen()}, false);
+}
+
