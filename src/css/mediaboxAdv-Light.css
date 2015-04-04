@@ -55,6 +55,55 @@
 	box-shadow: 0px 5px 20px rgba(0,0,0,0.50);
 }
 
+#mbCenter:fullscreen {
+	border-radius: 0px;
+	box-shadow: none;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#mbCenter:-moz-full-screen {
+	border-radius: 0px;
+	box-shadow: none;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#mbCenter:-webkit-full-screen {
+	border-radius: 0px;
+	box-shadow: none;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#mbCenter:-ms-full-screen {
+	border-radius: 0px;
+	box-shadow: none;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#mbCenter.mbFakeFullScreen {
+	border-radius: 0px;
+	box-shadow: none;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#mbCenter.mbLoadingFakeFullScreen {
+	background: #fff url(../images/loading-light.gif) no-repeat center;
+	border-radius: 0px;
+	box-shadow: none;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+
 #mbCenter.mbLoading {
 	background: #fff url(../images/loading-light.gif) no-repeat center;
 		/*	This style is applied only during animation.	*/

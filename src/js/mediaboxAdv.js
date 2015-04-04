@@ -79,15 +79,12 @@ var Mediabox;
 			var isOtherFullScreen = (document.fullscreenElement && document.fullscreenElement!=center) || (document.mozFullScreenElement && document.mozFullScreenElement!=center) || (document.webkitFullscreenElement && document.webkitFullscreenElement!=center) || (document.msFullscreenElement && document.msFullscreenElement!=center)
 
 			if (center && !Browser.Platform.ios && (isFullScreen || !isOtherFullScreen)) {
-				if(isFullScreen) {
+				if(isFullScreen)
 					fullscreen.set('html', options.buttonText[4]);
-					center.setStyles({padding: "0px"});
-				} else {
+				else
 					fullscreen.set('html', options.buttonText[3]);
-					center.setStyles({padding: centerPadding});
-				}
 
-				startEffect();
+//				startEffect();  //commented out to not interfere with recenter
 			}
 		},
 
@@ -375,7 +372,9 @@ var Mediabox;
 				center.webkitRequestFullscreen();
 			} else {
 				fakefullscreen=true;
+				center.className = "mbFakeFullScreen";
 				Mediabox.fscreen();
+				startEffect();
 			}
 		} else {
 			if (document.exitFullscreen && document.fullscreenEnabled) {
@@ -388,7 +387,9 @@ var Mediabox;
 				document.webkitExitFullscreen();
 			} else {
 				fakefullscreen=false;
+				center.className = "";
 				Mediabox.fscreen();
+				startEffect();
 			}
 		}
 		return false;
@@ -407,7 +408,10 @@ var Mediabox;
 			nextMedia = activeMedia + 1;
 			if (nextMedia == mediaArray.length) nextMedia = options.loop ? 0 : -1;
 			stop();
-			center.className = "mbLoading";
+			if(fakefullscreen)
+				center.className = "mbLoadingFakeFullScreen";
+			else
+				center.className = "mbLoading";
 			if (preload && mediaType == "inline" && !options.inlineClone) preload.adopt(media.getChildren());	// prevents loss of adopted data
 
 	/*	mediaboxAdvanced link formatting and media support	*/
@@ -1009,7 +1013,10 @@ var Mediabox;
 	}
 
 	function captionAnimate() {
-		center.className = "";
+		if(fakefullscreen)
+			center.className = "mbFakeFullScreen";
+		else
+			center.className = "";
 //		if (prevMedia >= 0) prevLink.style.display = "";
 //		if (nextMedia >= 0) nextLink.style.display = "";
 		fx.bottom.start(1);
