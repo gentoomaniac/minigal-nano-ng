@@ -280,6 +280,21 @@ if ($handle = opendir($currentdir))
     closedir($handle);
 } else die("ERROR: Could not open $currentdir for reading!\n$php_errormsg");
 
+$dirtimestamp=filemtime($currentdir);
+$lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $dirtimestamp);
+if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
+    $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
+if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))
+    $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
+if ($IfModifiedSince && $IfModifiedSince >= $filetimestamp) {
+    header($_SERVER['SERVER_PROTOCOL'] . " 304 Not Modified");
+    header("Last-Modified: " . $lastmodified);
+    exit;
+}
+header("Cache-Control: public, must-revalidate");
+header("Vary: Last-Modified");
+header("Last-Modified: " . $lastmodified);
+
 //-----------------------
 // SORT FILES AND FOLDERS
 //-----------------------
