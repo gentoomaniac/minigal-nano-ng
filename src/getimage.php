@@ -125,8 +125,13 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
 
 
 $_GET['filename'] = "./" . $_GET['filename'];
-$_GET['size']=filter_var($_GET['size'], FILTER_VALIDATE_INT);
-if ($_GET['size'] == false) $_GET['size'] = 1024;
+if($_GET['mode'] == 'thumb') {
+  $size=$config['thumb_size'];
+  $keepratio=false;
+} else {
+  $size=$config['small_size'];
+  $keepratio=true;
+}
 
 // Display error image if file isn't found
 if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
@@ -168,11 +173,11 @@ $thumbnail = null;
 
 if($config['caching']) {
     $md5sum = md5($_GET['filename']);
-    $thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+    $thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $size . "_" . ($keepratio?"keepratio":"square") . "." . $extension;
     if(!file_exists($config['cache_path']))
         mkdir($config['cache_path']);
 }
 
-create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
+create_thumb($_GET['filename'], $extension, $thumbnail, $size, $keepratio);
 
 ?>
