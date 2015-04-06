@@ -160,7 +160,7 @@ if ( !in_array($extension, $config['supported_image_types']) && !in_array($exten
     exit;
 }
 
-$filetimestamp=filemtime($_GET['filename']);
+$filetimestamp=max(filemtime($_GET['filename']), filemtime("./getimage.php"), filemtime("./config.php"));
 $lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $filetimestamp);
 if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
     $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));

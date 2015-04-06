@@ -280,7 +280,7 @@ if ($handle = opendir($currentdir))
     closedir($handle);
 } else die("ERROR: Could not open $currentdir for reading!\n$php_errormsg");
 
-$dirtimestamp=filemtime($currentdir);
+$dirtimestamp=max(filemtime($currentdir), filemtime("./index.php"), filemtime("./config.php"), filemtime(GALLERY_ROOT == "" ? "./templates/" . $config['templatefile'] . ".html" : GALLERY_ROOT . "templates/integrate.html"));
 $lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $dirtimestamp);
 if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
     $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
