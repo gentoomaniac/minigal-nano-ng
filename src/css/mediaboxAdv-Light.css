@@ -31,8 +31,8 @@
 }
 
 #mbBottom.mbMobile {
-	line-height: 24px;
-	font-size: 16px;
+	line-height: 0.5cm;
+	font-size: 0.5cm;
 }
 
 		/*	Overlay panel styling	*/
@@ -154,6 +154,9 @@
 	color: #777;
 	min-height: 20px;
 	padding: 10px 0 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 #mbTitle, #mbPrevLink, #mbNextLink, #mbCloseLink, #mbFullScreen {
@@ -168,6 +171,9 @@
 /*	line-height: 0.8em; */
 	font-size: 0.8em;
 	margin: auto 10px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 #mbCaption {
@@ -175,6 +181,9 @@
 	color: #777;
 	line-height: 1.6em;
 	font-size: 0.8em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 #mbPrevLink, #mbNextLink, #mbCloseLink, #mbFullScreen {
@@ -182,6 +191,11 @@
 	outline: none;
 	margin: 0 0 0 10px;
 	font-weight: normal;
+}
+
+#mbPrevLink.mbMobile, #mbNextLink.mbMobile, #mbCloseLink.mbMobile, #mbFullScreen.mbMobile {
+	font-size: 250%;
+	margin: 10px 0 0 0;
 }
 
 #mbPrevLink b, #mbNextLink b, #mbCloseLink b, #mbFullScreen b {

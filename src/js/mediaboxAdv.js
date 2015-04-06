@@ -69,7 +69,7 @@ var Mediabox;
 		},
 
 		recenter: function(){	// Thanks to Garo Hussenjian (Xapnet Productions http://www.xapnet.com) for suggesting this addition
-			if (center && !Browser.Platform.ios) {
+			if (center) {
 				resize(false);
 			}
 		},
@@ -78,7 +78,7 @@ var Mediabox;
 			isFullScreen = fakefullscreen || document.fullscreenElement==center || document.mozFullScreenElement==center || document.webkitFullscreenElement==center || document.msFullscreenElement==center;
 			var isOtherFullScreen = (document.fullscreenElement && document.fullscreenElement!=center) || (document.mozFullScreenElement && document.mozFullScreenElement!=center) || (document.webkitFullscreenElement && document.webkitFullscreenElement!=center) || (document.msFullscreenElement && document.msFullscreenElement!=center)
 
-			if (center && !Browser.Platform.ios && (isFullScreen || !isOtherFullScreen)) {
+			if (center && (isFullScreen || !isOtherFullScreen)) {
 				if(isFullScreen)
 					fullscreen.set('html', options.buttonText[4]);
 				else
@@ -91,7 +91,7 @@ var Mediabox;
 		open: function(_mediaArray, startMedia, _options) {
 			options = {
 //			Text options (translate as needed)
-				buttonText: ['<big>&laquo;</big>','<big>&raquo;</big>','<big>&times;</big>','<big>&#8892;</big>','<big>&#8893;</big>'],		// Array defines "previous", "next", "close", "maximize" and "restore" button content (HTML code should be written as entity codes or properly escaped)
+				buttonText: ['<big>&laquo;</big>','<big>&raquo;</big>','<big>&times;</big>','<big>&#8743;</big>','<big>&#8744;</big>'],		// Array defines "previous", "next", "close", "maximize" and "restore" button content (HTML code should be written as entity codes or properly escaped)
 //				buttonText: ['<big>«</big>','<big>»</big>','<big>×</big>'],
 //				buttonText: ['<b>P</b>rev','<b>N</b>ext','<b>C</b>lose'],
 				counterText: '({x} / {y})',	// Counter text, {x} = current item number, {y} = total gallery length
@@ -190,11 +190,15 @@ var Mediabox;
 				overlay.className = 'mbOverlayOpaque';
 			}
 
-			if (Browser.Platform.ios) {
+			if ((Browser.Platform.ios || Browser.Platform.android)) {
 				options.keyboard = false;
 				options.resizeOpening = false;	// Speeds up interaction on small devices (mobile) or older computers (IE6)
 				overlay.className = 'mbMobile';
 				bottom.className = 'mbMobile';
+				closeLink.className = 'mbMobile';
+				fullscreen.className = 'mbMobile';
+				prevLink.className = 'mbMobile';
+				nextLink.className = 'mbMobile';
 //				options.overlayOpacity = 0.001;	// Helps ameliorate the issues with CSS overlays in iOS, leaving a clickable background, but avoiding the visible issues
 				position();
 			}
