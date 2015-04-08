@@ -84,7 +84,7 @@ var Mediabox;
 				else
 					fullscreen.set('html', options.buttonText[3]);
 
-//				startEffect();  //commented out to not interfere with recenter
+				resize(false);
 			}
 		},
 
