@@ -115,6 +115,7 @@ var Mediabox;
 				showCounter: true,				// If true, a counter will only be shown if there is more than 1 image to display
 				countBack: false,				// Inverts the displayed number (so instead of the first element being labeled 1/10, it's 10/10)
 				clickBlock: true,				// Adds an event on right-click to block saving of images from the context menu in most browsers (this can't prevent other ways of downloading, but works as a casual deterent)
+				autorotate: true,				// Attempt to rotate screen on mobile devices in fullscreen mode to always use maximum of screen area
 								// due to less than ideal code ordering, clickBlock on links must be removed manually around line 250
 //			iOS device options
 //				iOSenable: false,				// When set to false, disables overlay entirely (links open in new tab)
@@ -378,6 +379,9 @@ var Mediabox;
 				center.className = "";
 				Mediabox.fscreen();
 			}
+
+			if(options.autorotate && screen.orientation)
+				screen.orientation.unlock();
 		}
 		return false;
 	}
@@ -970,6 +974,13 @@ var Mediabox;
 		} else if (mediaType == "ios" || Browser.Platform.ios || (mediaType == "obj" && Browser.Plugins.Flash.version < "8") || mediaWidth==0 || mediaHeight==0) {
 			mediaWidth = options.DefaultWidth;
 			mediaHeight = options.DefaultHeight;
+		}
+
+		if(isFullScreen && options.autorotate && screen.orientation) {
+			if(mediaWidth>mediaHeight)
+				screen.orientation.lock('landscape');
+			else
+				screen.orientation.lock('portrait');
 		}
 
 		media.setStyles({width: mediaWidth+"px", height: mediaHeight+"px", margin: "auto"});
