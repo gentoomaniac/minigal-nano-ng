@@ -31,8 +31,8 @@
 }
 
 #mbBottom.mbMobile {
-	line-height: 0.5cm;
-	font-size: 0.5cm;
+	line-height: 0.33cm;
+	font-size: 0.33cm;
 }
 
 		/*	Overlay panel styling	*/
@@ -221,7 +221,7 @@
 
 #mbPrevLink.mbMobile, #mbNextLink.mbMobile, #mbCloseLink.mbMobile, #mbFullScreen.mbMobile {
 	font-size: 250%;
-	margin: 10px 0 0 0;
+	margin: 5px 0 0 0;
 }
 
 #mbPrevLink b, #mbNextLink b, #mbCloseLink b, #mbFullScreen b {
