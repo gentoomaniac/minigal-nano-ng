@@ -200,13 +200,11 @@ var Mediabox;
 				prevLink.className = 'mbMobile';
 				nextLink.className = 'mbMobile';
 //				options.overlayOpacity = 0.001;	// Helps ameliorate the issues with CSS overlays in iOS, leaving a clickable background, but avoiding the visible issues
-				position();
 			}
 
 			if (Browser.ie6) {
 				options.resizeOpening = false;	// Speeds up interaction on small devices (mobile) or older computers (IE6)
 				overlay.className = 'mbOverlayAbsolute';
-				position();
 			}
 
 			if (typeof _mediaArray == "string") {	// Used for single mediaArray only, with URL and Title as first two arguments
@@ -218,7 +216,6 @@ var Mediabox;
 			options.loop = options.loop && (mediaArray.length > 1);
 
 			document.documentElement.style.overflow = 'hidden';
-			size();
 			setup(true);
 			top = window.getScrollTop() + (window.getHeight()/2);
 			left = window.getScrollLeft() + (window.getWidth()/2);
@@ -290,16 +287,6 @@ var Mediabox;
 
 	/*	Internal functions	*/
 
-	function position() {
-		overlay.setStyles({top: window.getScrollTop(), left: window.getScrollLeft()});
-	}
-
-	function size() {
-		winWidth = window.getWidth();
-		winHeight = window.getHeight();
-		overlay.setStyles({width: winWidth, height: winHeight});
-	}
-
 	function setup(open) {
 		// Hides on-page objects and embeds while the overlay is open, nessesary to counteract Firefox stupidity
 		if (Browser.firefox) {
@@ -314,8 +301,6 @@ var Mediabox;
 		overlay.style.display = open ? "" : "none";
 
 		var fn = open ? "addEvent" : "removeEvent";
-		if (Browser.Platform.ios || Browser.ie6) window[fn]("scroll", position);	// scroll position is updated only after movement has stopped
-		window[fn]("resize", size);
 		if (options.keyboard) document[fn]("keydown", keyDown);
 	}
 
