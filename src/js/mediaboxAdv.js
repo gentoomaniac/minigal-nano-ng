@@ -374,7 +374,6 @@ var Mediabox;
 				fakefullscreen=true;
 				center.className = "mbFakeFullScreen";
 				Mediabox.fscreen();
-				startEffect();
 			}
 		} else {
 			if (document.exitFullscreen && document.fullscreenEnabled) {
@@ -389,7 +388,6 @@ var Mediabox;
 				fakefullscreen=false;
 				center.className = "";
 				Mediabox.fscreen();
-				startEffect();
 			}
 		}
 		return false;
