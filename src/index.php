@@ -286,7 +286,7 @@ if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
     $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
 if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))
     $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
-if ($IfModifiedSince && $IfModifiedSince >= $filetimestamp) {
+if ($IfModifiedSince && $IfModifiedSince >= $dirtimestamp) {
     header($_SERVER['SERVER_PROTOCOL'] . " 304 Not Modified");
     header("Last-Modified: " . $lastmodified);
     exit;
