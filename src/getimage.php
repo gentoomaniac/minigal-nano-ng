@@ -59,7 +59,7 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
     $height = $size;
     $width = $size;
 
-    if ($config['caching'] && is_file($outfile)) {
+    if ($config['caching'] && is_file($outfile) && filemtime($outfile)>=filemtime($filename)) {
         readfile($outfile);     //Use the cache
         return;
     }
@@ -125,8 +125,13 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
 
 
 $_GET['filename'] = "./" . $_GET['filename'];
-$_GET['size']=filter_var($_GET['size'], FILTER_VALIDATE_INT);
-if ($_GET['size'] == false) $_GET['size'] = 1024;
+if($_GET['mode'] == 'thumb') {
+  $size=$config['thumb_size'];
+  $keepratio=false;
+} else {
+  $size=$config['small_size'];
+  $keepratio=true;
+}
 
 // Display error image if file isn't found
 if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
@@ -147,15 +152,7 @@ if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['fil
 }
 
 $extension = strtolower(preg_replace('/^.*\./', '', $_GET['filename']));
-if ( in_array($extension, $config['supported_image_types']) || in_array($extension, $config['supported_video_types']) ) {
-    if ($extension == 'gif') {
-        header('Content-type: image/gif');
-        $cleanext = 'gif';
-    } else {
-        header('Content-type: image/jpeg');
-        $cleanext = 'jpeg';
-    }
-} else {
+if ( !in_array($extension, $config['supported_image_types']) && !in_array($extension, $config['supported_video_types']) ) {
     header('Content-type: image/jpeg');
     $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
     ImageJPEG($errorimage,null,90);
@@ -163,16 +160,39 @@ if ( in_array($extension, $config['supported_image_types']) || in_array($extensi
     exit;
 }
 
+$filetimestamp=max(filemtime($_GET['filename']), filemtime("./getimage.php"), filemtime("./config.php"));
+$lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $filetimestamp);
+if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
+    $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
+if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))
+    $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
+if ($IfModifiedSince && $IfModifiedSince >= $filetimestamp) {
+    header($_SERVER['SERVER_PROTOCOL'] . " 304 Not Modified");
+    header("Last-Modified: " . $lastmodified);
+    exit;
+}
+header("Cache-Control: public, must-revalidate");
+header("Vary: Last-Modified");
+header("Last-Modified: " . $lastmodified);
+
+if ($extension == 'gif') {
+    header('Content-type: image/gif');
+    $cleanext = 'gif';
+} else {
+    header('Content-type: image/jpeg');
+    $cleanext = 'jpeg';
+}
+
 // Create paths for different picture versions
 $thumbnail = null;
 
 if($config['caching']) {
     $md5sum = md5($_GET['filename']);
-    $thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $_GET['size'] . "." . $cleanext;
+    $thumbnail = $config['cache_path'] . "/" . $md5sum . "_" . $size . "_" . ($keepratio?"keepratio":"square") . "." . $cleanext;
     if(!file_exists($config['cache_path']))
         mkdir($config['cache_path']);
 }
 
-create_thumb($_GET['filename'], $extension, $thumbnail, $_GET['size'], ($_GET['format'] != 'square'));
+create_thumb($_GET['filename'], $extension, $thumbnail, $size, $keepratio);
 
 ?>

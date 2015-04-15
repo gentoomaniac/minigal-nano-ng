@@ -164,10 +164,10 @@ if ($handle = opendir($currentdir))
                     $dirs[] = array(
                         "name" => $file,
                         "date" => filemtime($currentdir . "/" . $file . "/folder.jpg"),
-                        "html" => "<li><a href='?dir=" .ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" .
+                        "html" => "<li><a href='?dir=" . rawurlencode(ltrim($_GET['dir'] . "/" . $file, "/")) . "'><em>" .
                                    padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" .
-                                   GALLERY_ROOT . "getimage.php?filename=$currentdir/" . $file . "/folder.jpg&amp;size=" .
-                                   $config['thumb_size']."&amp;format=square'  alt='" . $i18n['label_loading'] . "' /></a></li>");
+                                   GALLERY_ROOT . "getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($file) .
+                                   "/folder.jpg&amp;mode=thumb'  alt='" . $i18n['label_loading'] . "' /></a></li>");
                 } else {
                     // Set thumbnail to first image found (if any):
                     $firstimage = getfirstImage("$currentdir/" . $file);
@@ -175,17 +175,17 @@ if ($handle = opendir($currentdir))
                         $dirs[] = array(
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
-                            "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" .
+                            "html" => "<li><a href='?dir=" . rawurlencode(ltrim($_GET['dir'] . "/" . $file, "/")) . "'><em>" .
                                        padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" .
-                                       GALLERY_ROOT . "getimage.php?filename=$thumbdir/" . $file . "/" . $firstimage .
-                                       "&amp;size=".$config['thumb_size']."'  alt='".$i18n['label_loading']."' /></a></li>"
+                                       GALLERY_ROOT . "getimage.php?filename=" . rawurlencode($thumbdir) . "/" . rawurlencode($file) .
+                                       "/" . rawurlencode($firstimage) . "&amp;mode=thumb'  alt='".$i18n['label_loading']."' /></a></li>"
                         );
                     } else {
                     // If no folder.jpg or image is found, then display default icon:
                         $dirs[] = array(
                             "name" => $file,
                             "date" => filemtime($currentdir . "/" . $file),
-                            "html" => "<li><a href='?dir=" . ltrim($_GET['dir'] . "/" . $file, "/") . "'><em>" .
+                            "html" => "<li><a href='?dir=" . rawurlencode(ltrim($_GET['dir'] . "/" . $file, "/")) . "'><em>" .
                                        padstring($file) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" .
                                        mb_strtolower($config['folder_color']) . ".png' width='" . $config['thumb_size'] .
                                        "' height='" . $config['thumb_size'] . "' alt='" . $i18n['label_loading']."' /></a></li>"
@@ -219,9 +219,9 @@ if ($handle = opendir($currentdir))
             if (in_array($extension, $config['supported_image_types']))
             {
                 // JPG, GIF and PNG
-                $img_captions[$file] .= "<a href=\"getimage.php?filename=" . $currentdir .
-                                        "/" . $file . "&amp;size=".$config['small_size']."\">small</a>&nbsp;\n";
-                $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
+                $img_captions[$file] .= "<a href=\"getimage.php?filename=" . rawurlencode($currentdir) .
+                                        "/" . rawurlencode($file) . "&amp;mode=small\">small</a>&nbsp;\n";
+                $img_captions[$file] .= "<a href=\"" . rawurlencode($currentdir) . "/" . rawurlencode($file) . "\">original</a>\n";
 
                 //Read EXIF
                 if ($config['display_exif'] == 1)
@@ -232,11 +232,11 @@ if ($handle = opendir($currentdir))
                     "name" => $file,
                     "date" => filemtime($currentdir . "/" . $file),
                     "size" => filesize($currentdir . "/" . $file),
-                    "html" => "<li><a href='getimage.php?filename=" . $currentdir . "/" . $file . "&amp;size=" .
-                               $config['small_size'] . "' rel='lightbox[billeder]' title='" . $img_captions[$file] .
-                               "'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . $thumbdir .
-                               "/" . $file . "&amp;size=" . $config['thumb_size'] . "&amp;format=square' alt='" .
-                               $i18n['label_loading'] . "' /></a><em>" . padstring($file, $label_max_length) . "</em></li>"
+                    "html" => "<li><a href='getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($file) .
+                               "&amp;mode=small' rel='lightbox[billeder]' title='" . $img_captions[$file] .
+                               "'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . rawurlencode($thumbdir) .
+                               "/" . rawurlencode($file) . "&amp;mode=thumb' alt='" . $i18n['label_loading'] . "' /></a><em>" .
+                               padstring($file, $label_max_length) . "</em></li>"
                 );
 
             } else if (in_array($extension, $config['supported_video_types'])) {
@@ -249,7 +249,7 @@ if ($handle = opendir($currentdir))
                     "size" => filesize($currentdir . "/" . $file),
                     "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='" .
                                $img_captions[$file]."'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" .
-                               $thumbdir . "/" . $file . "&amp;size=" . $config['thumb_size'] . "&amp;format=square' alt='" .
+                               rawurlencode($thumbdir) . "/" . rawurlencode($file) . "&amp;mode=thumb' alt='" .
                                $i18n['label_loading'] . "' /></a><em>" . padstring($file, $label_max_length) . "</em></li>"
                 );
             }
@@ -278,7 +278,22 @@ if ($handle = opendir($currentdir))
         }
     }
     closedir($handle);
-} else die("ERROR: Could not open $currentdir for reading!");
+} else die("ERROR: Could not open $currentdir for reading!\n$php_errormsg");
+
+$dirtimestamp=max(filemtime($currentdir), filemtime("./index.php"), filemtime("./config.php"), filemtime(GALLERY_ROOT == "" ? "./templates/" . $config['templatefile'] . ".html" : GALLERY_ROOT . "templates/integrate.html"));
+$lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $dirtimestamp);
+if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
+    $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
+if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))
+    $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
+if ($IfModifiedSince && $IfModifiedSince >= $dirtimestamp) {
+    header($_SERVER['SERVER_PROTOCOL'] . " 304 Not Modified");
+    header("Last-Modified: " . $lastmodified);
+    exit;
+}
+header("Cache-Control: public, must-revalidate");
+header("Vary: Last-Modified");
+header("Last-Modified: " . $lastmodified);
 
 //-----------------------
 // SORT FILES AND FOLDERS
@@ -367,7 +382,7 @@ if ($_GET['dir'] != "")
 //Include hidden links for all images BEFORE current page so lightbox is able to browse images on different pages
 for ($y = 0; $y < $offset_start - sizeof($dirs); $y++)
 {
-    $breadcrumb_navigation .= "<a href='getimage.php?filename=" . $currentdir . "/" . $files[$y]["name"] . "&amp;size=" . $config['small_size'] . "' rel='lightbox[billeder]' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+    $breadcrumb_navigation .= "<a href='getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($files[$y]["name"]) . "&amp;mode=small' rel='lightbox[billeder]' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
@@ -399,7 +414,7 @@ for ($i = $offset_start - sizeof($dirs); $i < $offset_end && $offset_current < $
 //Include hidden links for all images AFTER current page so lightbox is able to browse images on different pages
 for ($y = $i; $y < sizeof($files); $y++)
 {
-    $page_navigation .= "<a href='getimage.php?filename=" . $currentdir . "/" . $files[$y]["name"] . "&amp;size=" . $config['small_size'] . "' rel='lightbox[billeder]'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+    $page_navigation .= "<a href='getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($files[$y]["name"]) . "&amp;mode=small' rel='lightbox[billeder]'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
