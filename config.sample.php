@@ -42,7 +42,7 @@ $config['supported_image_types']  = array("jpg", "jpeg", "png", "gif"); //List o
 $config['supported_video_types']  = array("mp4", "mts", "mov", "m4v", "m4a", "aiff", "avi", "caf", "dv", "qtz", "flv"); //List of supported video extensions
 $config['memory_limit']           = "512M";
 $config['check_update']           = true;
-$config['check_update_url']       = "https://raw.githubusercontent.com/gentoomaniac/minigal-nano-ng/master/src/config.sample.php";
+$config['check_update_url']       = "https://raw.githubusercontent.com/gentoomaniac/minigal-nano-ng/master/config.sample.php";
 $config['debug']                  = false;
 
 //THUMBNAIL CACHING
