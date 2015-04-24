@@ -69,7 +69,7 @@ var Mediabox;
 		},
 
 		recenter: function(){	// Thanks to Garo Hussenjian (Xapnet Productions http://www.xapnet.com) for suggesting this addition
-			if (center && !Browser.Platform.ios) {
+			if (center) {
 				resize(false);
 			}
 		},
@@ -78,7 +78,7 @@ var Mediabox;
 			isFullScreen = fakefullscreen || document.fullscreenElement==center || document.mozFullScreenElement==center || document.webkitFullscreenElement==center || document.msFullscreenElement==center;
 			var isOtherFullScreen = (document.fullscreenElement && document.fullscreenElement!=center) || (document.mozFullScreenElement && document.mozFullScreenElement!=center) || (document.webkitFullscreenElement && document.webkitFullscreenElement!=center) || (document.msFullscreenElement && document.msFullscreenElement!=center)
 
-			if (center && !Browser.Platform.ios && (isFullScreen || !isOtherFullScreen)) {
+			if (center && (isFullScreen || !isOtherFullScreen)) {
 				if(isFullScreen)
 					fullscreen.set('html', options.buttonText[4]);
 				else
@@ -91,7 +91,7 @@ var Mediabox;
 		open: function(_mediaArray, startMedia, _options) {
 			options = {
 //			Text options (translate as needed)
-				buttonText: ['<big>&laquo;</big>','<big>&raquo;</big>','<big>&times;</big>','<big>&#8892;</big>','<big>&#8893;</big>'],		// Array defines "previous", "next", "close", "maximize" and "restore" button content (HTML code should be written as entity codes or properly escaped)
+				buttonText: ['<big>&laquo;</big>','<big>&raquo;</big>','<big>&times;</big>','<big>&#8743;</big>','<big>&#8744;</big>'],		// Array defines "previous", "next", "close", "maximize" and "restore" button content (HTML code should be written as entity codes or properly escaped)
 //				buttonText: ['<big>«</big>','<big>»</big>','<big>×</big>'],
 //				buttonText: ['<b>P</b>rev','<b>N</b>ext','<b>C</b>lose'],
 				counterText: '({x} / {y})',	// Counter text, {x} = current item number, {y} = total gallery length
@@ -115,6 +115,7 @@ var Mediabox;
 				showCounter: true,				// If true, a counter will only be shown if there is more than 1 image to display
 				countBack: false,				// Inverts the displayed number (so instead of the first element being labeled 1/10, it's 10/10)
 				clickBlock: true,				// Adds an event on right-click to block saving of images from the context menu in most browsers (this can't prevent other ways of downloading, but works as a casual deterent)
+				autorotate: true,				// Attempt to rotate screen on mobile devices in fullscreen mode to always use maximum of screen area
 								// due to less than ideal code ordering, clickBlock on links must be removed manually around line 250
 //			iOS device options
 //				iOSenable: false,				// When set to false, disables overlay entirely (links open in new tab)
@@ -190,19 +191,21 @@ var Mediabox;
 				overlay.className = 'mbOverlayOpaque';
 			}
 
-			if (Browser.Platform.ios) {
+			if ((Browser.Platform.ios || Browser.Platform.android)) {
 				options.keyboard = false;
 				options.resizeOpening = false;	// Speeds up interaction on small devices (mobile) or older computers (IE6)
 				overlay.className = 'mbMobile';
 				bottom.className = 'mbMobile';
+				closeLink.className = 'mbMobile';
+				fullscreen.className = 'mbMobile';
+				prevLink.className = 'mbMobile';
+				nextLink.className = 'mbMobile';
 //				options.overlayOpacity = 0.001;	// Helps ameliorate the issues with CSS overlays in iOS, leaving a clickable background, but avoiding the visible issues
-				position();
 			}
 
 			if (Browser.ie6) {
 				options.resizeOpening = false;	// Speeds up interaction on small devices (mobile) or older computers (IE6)
 				overlay.className = 'mbOverlayAbsolute';
-				position();
 			}
 
 			if (typeof _mediaArray == "string") {	// Used for single mediaArray only, with URL and Title as first two arguments
@@ -214,7 +217,6 @@ var Mediabox;
 			options.loop = options.loop && (mediaArray.length > 1);
 
 			document.documentElement.style.overflow = 'hidden';
-			size();
 			setup(true);
 			top = window.getScrollTop() + (window.getHeight()/2);
 			left = window.getScrollLeft() + (window.getWidth()/2);
@@ -286,16 +288,6 @@ var Mediabox;
 
 	/*	Internal functions	*/
 
-	function position() {
-		overlay.setStyles({top: window.getScrollTop(), left: window.getScrollLeft()});
-	}
-
-	function size() {
-		winWidth = window.getWidth();
-		winHeight = window.getHeight();
-		overlay.setStyles({width: winWidth, height: winHeight});
-	}
-
 	function setup(open) {
 		// Hides on-page objects and embeds while the overlay is open, nessesary to counteract Firefox stupidity
 		if (Browser.firefox) {
@@ -310,8 +302,6 @@ var Mediabox;
 		overlay.style.display = open ? "" : "none";
 
 		var fn = open ? "addEvent" : "removeEvent";
-		if (Browser.Platform.ios || Browser.ie6) window[fn]("scroll", position);	// scroll position is updated only after movement has stopped
-		window[fn]("resize", size);
 		if (options.keyboard) document[fn]("keydown", keyDown);
 	}
 
@@ -389,6 +379,9 @@ var Mediabox;
 				center.className = "";
 				Mediabox.fscreen();
 			}
+
+			if(options.autorotate && screen.orientation)
+				screen.orientation.unlock();
 		}
 		return false;
 	}
@@ -981,6 +974,13 @@ var Mediabox;
 		} else if (mediaType == "ios" || Browser.Platform.ios || (mediaType == "obj" && Browser.Plugins.Flash.version < "8") || mediaWidth==0 || mediaHeight==0) {
 			mediaWidth = options.DefaultWidth;
 			mediaHeight = options.DefaultHeight;
+		}
+
+		if(isFullScreen && options.autorotate && screen.orientation) {
+			if(mediaWidth>mediaHeight)
+				screen.orientation.lock('landscape');
+			else
+				screen.orientation.lock('portrait');
 		}
 
 		media.setStyles({width: mediaWidth+"px", height: mediaHeight+"px", margin: "auto"});
