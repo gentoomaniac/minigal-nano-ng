@@ -50,6 +50,23 @@ function rotate_image($filename, $target) {
 return $target;
 }
 
+// ToDo: fix this function!
+function getfirstImage($dirname) {
+    global $config;
+    $imageName = false;
+    if($handle = opendir($dirname))
+    {
+        while(false !== ($file = readdir($handle)))
+        {
+            $extension = strtolower(preg_replace('/^.*\./', '', $file));
+            if ($file[0] != '.' && (in_array($extension, $config['supported_image_types']) || in_array($extension, $config['supported_video_types']))) break;
+        }
+        $imageName = $file;
+        closedir($handle);
+    }
+    return($imageName);
+}
+
 function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio = true) {
     global $config;
     // Define variables
@@ -60,16 +77,44 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
     $width = $size;
 
     if ($config['caching'] && is_file($outfile) && filemtime($outfile)>=filemtime($filename)) {
+        if ($extension == 'gif')
+            header('Content-type: image/gif');
+        else
+            header('Content-type: image/jpeg');
         readfile($outfile);     //Use the cache
         return;
     }
 
     ob_start();
 
-    if ( in_array($extension, $config['supported_video_types']) ) {
+    if(is_dir($filename)) {
+        $isdir = true;
+        // Use .folder.jpg (if any):
+        if (file_exists($filename . "/.folder.jpg")) {
+            $filename = $filename . "/.folder.jpg";
+            $extension = "jpg";
+        } else {
+            // Set thumbnail to first image found (if any):
+            $firstimage = getfirstImage($filename);
+            if ($firstimage != "") {
+                $filename = $filename . "/" . $firstimage;
+		$extension = strtolower(preg_replace('/^.*\./', '', $filename));
+            } else {
+                // If no .folder.jpg or image is found, then display default icon:
+                header('Content-type: image/png');
+                readfile("images/folder_" . mb_strtolower($config['folder_color']) . ".png");
+                $filename = null;
+                $outfile = null;
+            }
+        }
+    } else
+        $isdir = false;
+
+    if ( $filename && in_array($extension, $config['supported_video_types']) ) {
         // Video thumbnail
+        header('Content-type: image/jpeg');
         passthru ("ffmpegthumbnailer -i " . escapeshellarg($filename) . " -o - -s " . escapeshellarg($size) . " -c jpeg -f" . ($keepratio? "" : " -a"));
-    } else {
+    } else if ($filename) {
         // Image thumbnail
         list($width_orig, $height_orig) = GetImageSize($filename);
 
@@ -94,6 +139,10 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
         }
 
         if($keepratio && $size > $height_orig && $size > $width_orig) {
+            if ($extension == 'gif')
+                header('Content-type: image/gif');
+            else
+                header('Content-type: image/jpeg');
             readfile($filename);
             $outfile = null; //don't cache images that are equal to originals
         } else {
@@ -109,10 +158,13 @@ function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio 
             imagecopyresampled($target,$source, 0,0, $xoord,$yoord, $width,$height, $width_orig,$height_orig);
             imagedestroy($source);
 
-            if ($extension == "jpg" || $extension == "jpeg" || $extension == "png")
+            if ($extension == "jpg" || $extension == "jpeg" || $extension == "png") {
+                header('Content-type: image/jpeg');
                 ImageJPEG($target,null,90);
-            else if ($extension == "gif")
+            } else if ($extension == "gif") {
+                header('Content-type: image/gif');
                 ImageGIF($target,null,90);
+            }
             imagedestroy($target);
         }
     }
@@ -134,29 +186,23 @@ if($_GET['mode'] == 'thumb') {
 }
 
 // Display error image if file isn't found
-if (preg_match("/\.\.\//i", $_GET['filename']) || !is_file($_GET['filename'])) {
+if (preg_match("/\.\.\//i", $_GET['filename']) || !(is_file($_GET['filename']) || is_dir($_GET['filename']))) {
     header('Content-type: image/jpeg');
-    $errorimage = ImageCreateFromJPEG('images/questionmark.jpg');
-    ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimage);
+    readfile('images/questionmark.jpg');
     exit;
 }
 
 // Display error image if file exists, but can't be opened
 if (substr(decoct(fileperms($_GET['filename'])), -1, strlen(fileperms($_GET['filename']))) < 4 OR substr(decoct(fileperms($_GET['filename'])), -3,1) < 4) {
     header('Content-type: image/jpeg');
-    $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
-    ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimage);
+    readfile('images/cannotopen.jpg');
     exit;
 }
 
 $extension = strtolower(preg_replace('/^.*\./', '', $_GET['filename']));
-if ( !in_array($extension, $config['supported_image_types']) && !in_array($extension, $config['supported_video_types']) ) {
+if ( !is_dir($_GET['filename']) && !in_array($extension, $config['supported_image_types']) && !in_array($extension, $config['supported_video_types']) ) {
     header('Content-type: image/jpeg');
-    $errorimage = ImageCreateFromJPEG('images/cannotopen.jpg');
-    ImageJPEG($errorimage,null,90);
-    imagedestroy($errorimage);
+    readfile('images/cannotopen.jpg');
     exit;
 }
 
@@ -175,13 +221,10 @@ header("Cache-Control: public, must-revalidate");
 header("Vary: Last-Modified");
 header("Last-Modified: " . $lastmodified);
 
-if ($extension == 'gif') {
-    header('Content-type: image/gif');
+if ($extension == 'gif')
     $cleanext = 'gif';
-} else {
-    header('Content-type: image/jpeg');
+else
     $cleanext = 'jpeg';
-}
 
 // Create paths for different picture versions
 $thumbnail = null;
