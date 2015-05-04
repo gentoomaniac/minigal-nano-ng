@@ -6,7 +6,7 @@
 	RewriteCond %{REQUEST_FILENAME} -d
 		RewriteRule ^photos/(.*)$ ?rewrite=1&dir=$1 [QSA,B,END]
 	RewriteRule ^small/(.*)$ getimage.php?mode=small&filename=photos/$1 [QSA,B,L]
-        RewriteRule ^thumb/(.*)$ getimage.php?mode=thumb&filename=photos/$1 [QSA,B,L]
+	RewriteRule ^thumb/(.*)$ getimage.php?mode=thumb&filename=photos/$1 [QSA,B,L]
 	RewriteCond %{QUERY_STRING} "^dir=([^&]*)(|&(.*))$"
 		RewriteRule ^$ photos/%1?%3 [R=301,L]
 	RewriteCond %{QUERY_STRING} !"rewrite=1"
