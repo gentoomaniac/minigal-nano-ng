@@ -148,8 +148,10 @@ $files = array();
 $dirs = array();
 if ($handle = opendir($currentdir))
 {
+    date_default_timezone_set("UTC");
     $dirtimestamp=max(filemtime($currentdir), filemtime("./index.php"), filemtime("./config.php"), filemtime($integrate ? GALLERY_ROOT . "templates/integrate.html" : "./templates/" . $config['templatefile'] . ".html"));
     $lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $dirtimestamp);
+    $IfModifiedSince = 0;
     if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
         $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
     if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))

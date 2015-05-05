@@ -184,8 +184,10 @@ if ( !is_dir($_GET['filename']) && !in_array($extension, $config['supported_imag
     exit;
 }
 
+date_default_timezone_set("UTC");
 $filetimestamp=max(filemtime($_GET['filename']), filemtime("./getimage.php"), filemtime("./config.php"));
 $lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $filetimestamp);
+$IfModifiedSince = 0;
 if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
     $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
 if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))
