@@ -28,28 +28,6 @@ if(!defined("MINIGAL_INTERNAL")) {
 require("config.php");
 ini_set("memory_limit",$config['memory_limit']);
 
-function rotate_image($filename, $target) {
-    // Rotate JPG pictures
-    if (preg_match("/\.jpg$|\.jpeg$/i", $filename) && function_exists('exif_read_data') && function_exists('imagerotate')) {
-        $exif = exif_read_data($filename);
-        if (array_key_exists('IFD0', $exif)) {
-            $ort = $exif['IFD0']['Orientation'];
-            $degrees = 0;
-            switch($ort) {
-                case 6: // 90 rotate right
-                    $degrees = 270;
-                break;
-                case 8:    // 90 rotate left
-                    $degrees = 90;
-                break;
-            }
-            if ($degrees != 0)  return imagerotate($target, $degrees, 0);
-        }
-    }
-
-return $target;
-}
-
 // ToDo: fix this function!
 function getfirstImage($dirname) {
     global $config;
@@ -70,7 +48,7 @@ function getfirstImage($dirname) {
 function create_thumb($filename, $extension, $outfile, $size = 1024, $keepratio = true) {
     global $config;
     // Define variables
-    $target = rotate_image($filename);
+    $target = null;
     $xoord = 0;
     $yoord = 0;
     $height = $size;
