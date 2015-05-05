@@ -41,26 +41,25 @@ If you are using Apache web server, then all necessary configuration is already 
 
 ### Nginx
 
-Please add the following lines into your nginx configuration for the corresponding location. Replace "/minigal-nano-ng" with your actual location path of the gallery in all 9 (nine) occurences below:
+Please add the following lines into your nginx configuration for the corresponding location (note that you may need to change the rewrite expressions to explicitly point to the location if you have "/photos/", "/small/" or "/thumb/" in your location path):
 
 	location /minigal-nano-ng/ {
-		set $rewritebase /minigal-nano-ng;
 		if (-d $request_filename) {
-			rewrite ^/minigal-nano-ng/(.*[^/])$ $rewritebase/$1/ permanent;
-			rewrite ^/minigal-nano-ng/photos/(.*)$ $rewritebase/?rewrite=1&dir=$1 last;
+			rewrite ^(.*[^/])$ $1/ permanent;
+			rewrite ^(.*?)/photos/(.*)$ $1/?rewrite=1&dir=$2 last;
 		}
-		rewrite ^/minigal-nano-ng/small/(.*)$ $rewritebase/getimage.php?mode=small&filename=photos/$1 last;
-		rewrite ^/minigal-nano-ng/thumb/(.*)$ $rewritebase/getimage.php?mode=thumb&filename=photos/$1 last;
+		rewrite ^(/.*?)/small/(.*)$ $1/getimage.php?mode=small&filename=photos/$2 last;
+		rewrite ^(/.*?)/thumb/(.*)$ $1/getimage.php?mode=thumb&filename=photos/$2 last;
 		if ($query_string ~ "^dir=([^&]*)$") {
 			set $dir $1;
-			rewrite ^/minigal-nano-ng/$ $rewritebase/photos/$dir? permanent;
+			rewrite ^(/.*)/$ $1/photos/$dir? permanent;
 		}
 		if ($query_string ~ "^dir=([^&]*)&(.*)$") {
 			set $dir $1;
 			set $extraargs $2;
-			rewrite ^/minigal-nano-ng/$ $rewritebase/photos/$dir?$extraargs? permanent;
+			rewrite ^(/.*)/$ $1/photos/$dir?$extraargs? permanent;
 		}
 		if ($query_string !~ "^rewrite=1") {
-			rewrite ^/minigal-nano-ng/$ $rewritebase/photos/ permanent;
+			rewrite ^(/((?!photos).)*)/$ $1/photos/ permanent;
 		}
 	}
