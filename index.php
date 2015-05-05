@@ -74,22 +74,6 @@ function padstring($name, $length) {
       return mb_substr($name,0,$length) . "...";
    } else return $name;
 }
-// ToDo: fix this function!
-function getfirstImage($dirname) {
-    global $config;
-    $imageName = false;
-    if($handle = opendir($dirname))
-    {
-        while(false !== ($file = readdir($handle)))
-        {
-            $extension = strtolower(preg_replace('/^.*\./', '', $file));
-            if ($file[0] != '.' && in_array($extension, $config['supported_image_types'])) break;
-        }
-        $imageName = $file;
-        closedir($handle);
-    }
-    return($imageName);
-}
 function readEXIF($file) {
         $exif_data = "";
         $exif_idf0 = exif_read_data ($file,'IFD0' ,0 );
@@ -138,10 +122,24 @@ if (ini_get('allow_url_fopen') == "1" && $config['check_update']) {
 }
 
 mb_internal_encoding("UTF-8");
-if (!defined("GALLERY_ROOT")) define("GALLERY_ROOT", "");
-$thumbdir = rtrim('photos' . "/" .$_REQUEST["dir"],"/");
-$thumbdir = str_replace("/..", "", $thumbdir); // Prevent looking at any up-level folders
-$currentdir = GALLERY_ROOT . $thumbdir;
+
+if (!defined("GALLERY_ROOT"))
+	define("GALLERY_ROOT", "");
+else
+	$integrate=true;
+
+if($_REQUEST["rewrite"]) {
+	if(substr($_SERVER['PHP_SELF'], -strlen("index.php"))==="index.php")
+		$uri_prefix=substr($_SERVER['PHP_SELF'], 0, -strlen("index.php")) . GALLERY_ROOT;
+	else
+		$uri_prefix=$_SERVER['PHP_SELF'] . GALLERY_ROOT;
+} else
+	$uri_prefix=GALLERY_ROOT;
+
+$reqdir = str_replace("../", "", rtrim($_REQUEST["dir"]) . "/"); // Prevent looking at any up-level folders
+if (substr($reqdir, -2)=="//") $reqdir=substr($reqdir, 0, -1);
+if ($reqdir == "/") $reqdir = "";
+$currentdir = GALLERY_ROOT . "photos/" . $reqdir;
 
 //-----------------------
 // READ FILES AND FOLDERS
@@ -150,55 +148,55 @@ $files = array();
 $dirs = array();
 if ($handle = opendir($currentdir))
 {
+    date_default_timezone_set("UTC");
+    $dirtimestamp=max(filemtime($currentdir), filemtime("./index.php"), filemtime("./config.php"), filemtime($integrate ? GALLERY_ROOT . "templates/integrate.html" : "./templates/" . $config['templatefile'] . ".html"));
+    $lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $dirtimestamp);
+    $IfModifiedSince = 0;
+    if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
+        $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
+    if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))
+        $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
+    if ($IfModifiedSince && $IfModifiedSince >= $dirtimestamp) {
+        header($_SERVER['SERVER_PROTOCOL'] . " 304 Not Modified");
+        header("Last-Modified: " . $lastmodified);
+        exit;
+    }
+    header("Cache-Control: public, must-revalidate");
+    header("Vary: Last-Modified");
+    header("Last-Modified: " . $lastmodified);
+
     while (false !== ($file = readdir($handle)))
     {
+        if (mb_substr($file, 0, 1) == "." && $file != ".captions.txt")
+            continue;
+
         // 1. LOAD FOLDERS
         if (is_dir($currentdir . "/" . $file))
         {
-            if ($file != "." && $file != ".." && mb_substr($file, 0, 1) != ".")
-            {
-                checkpermissions($currentdir . "/" . $file); // Check for correct file permission
-                // Set thumbnail to folder.jpg if found:
-                if (file_exists("$currentdir/" . $file . "/folder.jpg"))
-                {
-                    $dirs[] = array(
-                        "name" => $file,
-                        "date" => filemtime($currentdir . "/" . $file . "/folder.jpg"),
-                        "html" => "<li><a href='?dir=" . rawurlencode(ltrim($_GET['dir'] . "/" . $file, "/")) . "'><em>" .
-                                   padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" .
-                                   GALLERY_ROOT . "getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($file) .
-                                   "/folder.jpg&amp;mode=thumb'  alt='" . $i18n['label_loading'] . "' /></a></li>");
-                } else {
-                    // Set thumbnail to first image found (if any):
-                    $firstimage = getfirstImage("$currentdir/" . $file);
-                    if ($firstimage != "") {
-                        $dirs[] = array(
-                            "name" => $file,
-                            "date" => filemtime($currentdir . "/" . $file),
-                            "html" => "<li><a href='?dir=" . rawurlencode(ltrim($_GET['dir'] . "/" . $file, "/")) . "'><em>" .
-                                       padstring($file, $i18n['label_max_length']) . "</em><span></span><img src='" .
-                                       GALLERY_ROOT . "getimage.php?filename=" . rawurlencode($thumbdir) . "/" . rawurlencode($file) .
-                                       "/" . rawurlencode($firstimage) . "&amp;mode=thumb'  alt='".$i18n['label_loading']."' /></a></li>"
-                        );
-                    } else {
-                    // If no folder.jpg or image is found, then display default icon:
-                        $dirs[] = array(
-                            "name" => $file,
-                            "date" => filemtime($currentdir . "/" . $file),
-                            "html" => "<li><a href='?dir=" . rawurlencode(ltrim($_GET['dir'] . "/" . $file, "/")) . "'><em>" .
-                                       padstring($file) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" .
-                                       mb_strtolower($config['folder_color']) . ".png' width='" . $config['thumb_size'] .
-                                       "' height='" . $config['thumb_size'] . "' alt='" . $i18n['label_loading']."' /></a></li>"
-                        );
-                    }
-                }
+
+            checkpermissions($currentdir . "/" . $file); // Check for correct file permission
+
+            if ($_REQUEST["rewrite"]) {
+                $thumburl = $uri_prefix . "thumb/" . str_replace("%2F", "/", rawurlencode($reqdir . $file));
+                $origurl = rawurlencode($file) . "/";
+            } else {
+                $thumburl = $uri_prefix . "getimage.php?filename=" . str_replace("%2F", "/", rawurlencode($currentdir . $file)) . "&amp;mode=thumb";
+                $origurl = $uri_prefix . "?dir=" . str_replace("%2F", "/", rawurlencode($reqdir . $file)) . "/";
             }
+
+            $dirs[] = array(
+                "name" => $file,
+                "date" => filemtime($currentdir . "/" . $file),
+                "html" => "<li><a href='" . $origurl . "'><em>" . padstring($file, $i18n['label_max_length']) .
+                           "</em><span></span><img src='" . $thumburl . "'  alt='" . $i18n['label_loading'] . "' /></a></li>\n");
+
+            continue;
         }
 
         // 2. LOAD CAPTIONS
-        if (file_exists($currentdir ."/captions.txt"))
+        if ($file == ".captions.txt")
         {
-            $file_handle = fopen($currentdir ."/captions.txt", "rb");
+            $file_handle = fopen($currentdir . ".captions.txt", "rb");
             while (!feof($file_handle) )
             {
                 $line_of_text = fgets($file_handle);
@@ -210,90 +208,82 @@ if ($handle = opendir($currentdir))
                 }
             }
             fclose($file_handle);
+            continue;
         }
 
         // 3. LOAD FILES
-        if ($file != "." && $file != ".." && $file != "folder.jpg" && mb_substr($file, 0, 1) != ".")
+        $extension = strtolower(preg_replace('/^.*\./', '', $file));
+        if ($_REQUEST["rewrite"]) {
+            $smallurl = $uri_prefix . "small/" . str_replace("%2F", "/", rawurlencode($reqdir . $file));
+            $thumburl = $uri_prefix . "thumb/" . str_replace("%2F", "/", rawurlencode($reqdir . $file));
+            $origurl = rawurlencode($file);
+        } else {
+            $smallurl = $uri_prefix . "getimage.php?filename=" . str_replace("%2F", "/", rawurlencode($currentdir . $file)) . "&amp;mode=small";
+            $thumburl = $uri_prefix . "getimage.php?filename=" . str_replace("%2F", "/", rawurlencode($currentdir . $file)) . "&amp;mode=thumb";
+            $origurl = str_replace("%2F", "/", rawurlencode($currentdir . $file));
+        }
+
+        if (in_array($extension, $config['supported_image_types']))
         {
-            $extension = strtolower(preg_replace('/^.*\./', '', $file));
-            if (in_array($extension, $config['supported_image_types']))
-            {
-                // JPG, GIF and PNG
-                $img_captions[$file] .= "<a href=\"getimage.php?filename=" . rawurlencode($currentdir) .
-                                        "/" . rawurlencode($file) . "&amp;mode=small\">small</a>&nbsp;\n";
-                $img_captions[$file] .= "<a href=\"" . rawurlencode($currentdir) . "/" . rawurlencode($file) . "\">original</a>\n";
+            // JPG, GIF and PNG
+            $img_captions[$file] .= "<a href=\"" . $smallurl . "\">small</a>&nbsp;\n";
+            $img_captions[$file] .= "<a href=\"" . $origurl . "\">original</a>\n";
 
-                //Read EXIF
-                if ($config['display_exif'] == 1)
-                    $img_captions[$file] .= readEXIF($currentdir . "/" . $file);
+            //Read EXIF
+            if ($config['display_exif'] == 1)
+                $img_captions[$file] .= readEXIF($currentdir . "/" . $file);
 
-                checkpermissions($currentdir . "/" . $file);
-                $files[] = array (
-                    "name" => $file,
-                    "date" => filemtime($currentdir . "/" . $file),
-                    "size" => filesize($currentdir . "/" . $file),
-                    "html" => "<li><a href='getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($file) .
-                               "&amp;mode=small' rel='lightbox[billeder]' title='" . $img_captions[$file] .
-                               "'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" . rawurlencode($thumbdir) .
-                               "/" . rawurlencode($file) . "&amp;mode=thumb' alt='" . $i18n['label_loading'] . "' /></a><em>" .
-                               padstring($file, $label_max_length) . "</em></li>"
-                );
+            checkpermissions($currentdir . "/" . $file);
+            $files[] = array (
+                "name" => $file,
+                "date" => filemtime($currentdir . "/" . $file),
+                "size" => filesize($currentdir . "/" . $file),
+                "html" => "<li><a href='" . $smallurl . "' rel='lightbox[billeder]' title='" . $img_captions[$file] .
+                           "'><span></span><img src='" . $thumburl . "' alt='" . $i18n['label_loading'] . "' /></a><em>" .
+                           padstring($file, $label_max_length) . "</em></li>\n"
+            );
+            continue;
+        }
 
-            } else if (in_array($extension, $config['supported_video_types'])) {
-                // MP4
-                $img_captions[$file] .= "<a href=\"" . $currentdir . "/" . $file . "\">original</a>\n";
-                checkpermissions($currentdir . "/" . $file);
-                $files[] = array (
-                    "name" => $file,
-                    "date" => filemtime($currentdir . "/" . $file),
-                    "size" => filesize($currentdir . "/" . $file),
-                    "html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title='" .
-                               $img_captions[$file]."'><span></span><img src='" . GALLERY_ROOT . "getimage.php?filename=" .
-                               rawurlencode($thumbdir) . "/" . rawurlencode($file) . "&amp;mode=thumb' alt='" .
-                               $i18n['label_loading'] . "' /></a><em>" . padstring($file, $label_max_length) . "</em></li>"
-                );
-            }
+        if (in_array($extension, $config['supported_video_types'])) {
+            // MP4
+            $img_captions[$file] .= "<a href=\"" . $origurl . "\">original</a>\n";
+            checkpermissions($currentdir . "/" . $file);
+            $files[] = array (
+                "name" => $file,
+                "date" => filemtime($currentdir . "/" . $file),
+                "size" => filesize($currentdir . "/" . $file),
+                "html" => "<li><a href='" . $origurl . "' rel='lightbox[billeder]' title='" . $img_captions[$file] .
+                           "'><span></span><img src='" . $thumburl . "' alt='" . $i18n['label_loading'] . "' /></a><em>" .
+                           padstring($file, $label_max_length) . "</em></li>\n"
+            );
+            continue;
+        }
             // Other filetypes
-            $extension = "";
-            if (preg_match("/.pdf$/i", $file)) $extension = "PDF"; // PDF
-            if (preg_match("/.zip$/i", $file)) $extension = "ZIP"; // ZIP archive
-            if (preg_match("/.rar$|.r[0-9]{2,}/i", $file)) $extension = "RAR"; // RAR Archive
-            if (preg_match("/.tar$/i", $file)) $extension = "TAR"; // TARball archive
-            if (preg_match("/.gz$/i", $file)) $extension = "GZ"; // GZip archive
-            if (preg_match("/.doc$|.docx$/i", $file)) $extension = "DOCX"; // Word
-            if (preg_match("/.ppt$|.pptx$/i", $file)) $extension = "PPTX"; //Powerpoint
-            if (preg_match("/.xls$|.xlsx$/i", $file)) $extension = "XLXS"; // Excel
+        $extension = "";
+        if (preg_match("/.pdf$/i", $file)) $extension = "PDF"; // PDF
+        if (preg_match("/.zip$/i", $file)) $extension = "ZIP"; // ZIP archive
+        if (preg_match("/.rar$|.r[0-9]{2,}/i", $file)) $extension = "RAR"; // RAR Archive
+        if (preg_match("/.tar$/i", $file)) $extension = "TAR"; // TARball archive
+        if (preg_match("/.gz$/i", $file)) $extension = "GZ"; // GZip archive
+        if (preg_match("/.doc$|.docx$/i", $file)) $extension = "DOCX"; // Word
+        if (preg_match("/.ppt$|.pptx$/i", $file)) $extension = "PPTX"; //Powerpoint
+        if (preg_match("/.xls$|.xlsx$/i", $file)) $extension = "XLXS"; // Excel
 
-            if ($extension != "") {
-                $files[] = array (
-                    "name" => $file,
-                    "date" => filemtime($currentdir . "/" . $file),
-                    "size" => filesize($currentdir . "/" . $file),
-                    "html" => "<li><a href='" . $currentdir . "/" . $file . "' title='$file'><em-pdf>" .
-                               padstring($file, 20) . "</em-pdf><span></span><img src='" . GALLERY_ROOT .
-                               "images/filetype_" . $extension . ".png' width='" . $config['thumb_size'] .
-                               "' height='$thumb_size' alt='$file' /></a></li>"
-                );
-            }
+        if ($extension != "") {
+            $files[] = array (
+                "name" => $file,
+                "date" => filemtime($currentdir . "/" . $file),
+                "size" => filesize($currentdir . "/" . $file),
+                "html" => "<li><a href='" . $origurl . "' title='$file'><em-pdf>" .
+                           padstring($file, 20) . "</em-pdf><span></span><img src='" . $uri_prefix .
+                           "images/filetype_" . $extension . ".png' width='" . $config['thumb_size'] .
+                           "' height='$thumb_size' alt='$file' /></a></li>\n"
+            );
         }
     }
     closedir($handle);
 } else die("ERROR: Could not open $currentdir for reading!\n$php_errormsg");
-
-$dirtimestamp=max(filemtime($currentdir), filemtime("./index.php"), filemtime("./config.php"), filemtime(GALLERY_ROOT == "" ? "./templates/" . $config['templatefile'] . ".html" : GALLERY_ROOT . "templates/integrate.html"));
-$lastmodified=gmdate("D, d M Y H:i:s \G\M\T", $dirtimestamp);
-if (isset($_ENV['HTTP_IF_MODIFIED_SINCE']))
-    $IfModifiedSince = strtotime(substr($_ENV['HTTP_IF_MODIFIED_SINCE'], 5));
-if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']))
-    $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
-if ($IfModifiedSince && $IfModifiedSince >= $dirtimestamp) {
-    header($_SERVER['SERVER_PROTOCOL'] . " 304 Not Modified");
-    header("Last-Modified: " . $lastmodified);
-    exit;
-}
-header("Cache-Control: public, must-revalidate");
-header("Vary: Last-Modified");
-header("Last-Modified: " . $lastmodified);
 
 //-----------------------
 // SORT FILES AND FOLDERS
@@ -347,13 +337,19 @@ if (sizeof($dirs) + sizeof($files) > $config['thumbs_pr_page'])
     {
         if ($_GET["page"] == $i)
             $page_navigation .= "$i";
-            else
-                $page_navigation .= "<a href='?dir=" . $_GET["dir"] . "&amp;page=" . ($i) . "'>" . $i . "</a>";
+        else if ($_REQUEST["rewrite"])
+            $page_navigation .= "<a href='?page=" . ($i) . "'>" . $i . "</a>";
+        else
+            $page_navigation .= "<a href='?dir=" . $_GET["dir"] . "&amp;page=" . ($i) . "'>" . $i . "</a>";
         if ($i != ceil((sizeof($files) + sizeof($dirs)) / $config['thumbs_pr_page'])) $page_navigation .= " | ";
     }
     //Insert link to view all images
-    if ($_GET["page"] == "all") $page_navigation .= " | " . $i18n['label_all'];
-    else $page_navigation .= " | <a href='?dir=" . $_GET["dir"] . "&amp;page=all'>" . $i18n['label_all'] . "</a>";
+    if ($_GET["page"] == "all")
+        $page_navigation .= " | " . $i18n['label_all'];
+    else if($_REQUEST["rewrite"])
+        $page_navigation .= " | <a href='?page=all'>" . $i18n['label_all'] . "</a>";
+    else
+        $page_navigation .= " | <a href='?dir=" . $_GET["dir"] . "&amp;page=all'>" . $i18n['label_all'] . "</a>";
 }
 
 //-----------------------
@@ -361,18 +357,24 @@ if (sizeof($dirs) + sizeof($files) > $config['thumbs_pr_page'])
 //-----------------------
 if ($_GET['dir'] != "")
 {
-    $breadcrumb_navigation .= "<a href='?dir='>" . $i18n['label_home'] . "</a> > ";
-    $navitems = explode("/", $_REQUEST['dir']);
+    if($_REQUEST["rewrite"])
+        $breadcrumb_navigation .= "<a href='" . $uri_prefix . "photos/'>" . $i18n['label_home'] . "</a> > ";
+    else
+        $breadcrumb_navigation .= "<a href='" . $uri_prefix . "?dir='>" . $i18n['label_home'] . "</a> > ";
+    $navitems = explode("/", substr($reqdir, -1)=="/"? substr($reqdir, 0, -1) : $reqdir);
     for($i = 0; $i < sizeof($navitems); $i++)
     {
         if ($i == sizeof($navitems)-1) $breadcrumb_navigation .= $navitems[$i];
         else
         {
-            $breadcrumb_navigation .= "<a href='?dir=";
+            if($_REQUEST["rewrite"])
+                $breadcrumb_navigation .= "<a href='" . $uri_prefix . "photos/";
+            else
+                $breadcrumb_navigation .= "<a href='" . $uri_prefix . "?dir=";
             for ($x = 0; $x <= $i; $x++)
             {
-                $breadcrumb_navigation .= $navitems[$x];
-                if ($x < $i) $breadcrumb_navigation .= "/";
+                $breadcrumb_navigation .= rawurlencode($navitems[$x]);
+                if ($x < $i || $_REQUEST["rewrite"]) $breadcrumb_navigation .= "/";
             }
             $breadcrumb_navigation .= "'>" . $navitems[$i] . "</a> > ";
         }
@@ -382,7 +384,21 @@ if ($_GET['dir'] != "")
 //Include hidden links for all images BEFORE current page so lightbox is able to browse images on different pages
 for ($y = 0; $y < $offset_start - sizeof($dirs); $y++)
 {
-    $breadcrumb_navigation .= "<a href='getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($files[$y]["name"]) . "&amp;mode=small' rel='lightbox[billeder]' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+    $extension = strtolower(preg_replace('/^.*\./', '', $files[$y]["name"]));
+    if (in_array($extension, $config['supported_image_types']))
+        if($_REQUEST["rewrite"])
+            $smallurl = $uri_prefix . "small/" . str_replace("%2F", "/", rawurlencode($reqdir . $files[$y]["name"]));
+        else
+            $smallurl = $uri_prefix . "getimage.php?filename=" . str_replace("%2F", "/", rawurlencode($currentdir . $files[$y]["name"])) . "&amp;mode=small";
+    else if (in_array($extension, $config['supported_video_types']))
+        if($_REQUEST["rewrite"])
+            $smallurl = rawurlencode($files[$y]["name"]);
+        else
+            $smallurl = str_replace("%2F", "/", rawurlencode($currentdir . $files[$y]["name"]));
+    else
+        continue;
+
+    $breadcrumb_navigation .= "<a href='" . $smallurl . "' rel='lightbox[billeder]' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
@@ -414,7 +430,21 @@ for ($i = $offset_start - sizeof($dirs); $i < $offset_end && $offset_current < $
 //Include hidden links for all images AFTER current page so lightbox is able to browse images on different pages
 for ($y = $i; $y < sizeof($files); $y++)
 {
-    $page_navigation .= "<a href='getimage.php?filename=" . rawurlencode($currentdir) . "/" . rawurlencode($files[$y]["name"]) . "&amp;mode=small' rel='lightbox[billeder]'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+    $extension = strtolower(preg_replace('/^.*\./', '', $files[$y]["name"]));
+    if (in_array($extension, $config['supported_image_types']))
+        if($_REQUEST["rewrite"])
+            $smallurl = $uri_prefix . "small/" . str_replace("%2F", "/", rawurlencode($reqdir . $files[$y]["name"]));
+        else
+            $smallurl = $uri_prefix . "getimage.php?filename=" . str_replace("%2F", "/", rawurlencode($currentdir . $files[$y]["name"])) . "&amp;mode=small";
+    else if (in_array($extension, $config['supported_video_types']))
+        if($_REQUEST["rewrite"])
+            $smallurl = rawurlencode($files[$y]["name"]);
+        else
+            $smallurl = str_replace("%2F", "/", rawurlencode($currentdir . $files[$y]["name"]));
+    else
+        continue;
+
+    $page_navigation .= "<a href='" . $smallurl . "' rel='lightbox[billeder]'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
@@ -425,7 +455,7 @@ $messages = "<div id=\"topbar\">" . $messages . " <a href=\"#\" onclick=\"docume
 }
 
 //PROCESS TEMPLATE FILE
-    if(GALLERY_ROOT != "") $templ = GALLERY_ROOT . "templates/integrate.html";
+    if($integrate) $templ = GALLERY_ROOT . "templates/integrate.html";
     else $templ = "templates/" . $config['templatefile'] . ".html";
     if(!$fd = fopen($templ, "r"))
     {
@@ -440,7 +470,7 @@ $messages = "<div id=\"topbar\">" . $messages . " <a href=\"#\" onclick=\"docume
         $template = preg_replace("/<% title %>/", $config['title'], $template);
         $template = preg_replace("/<% messages %>/", $messages, $template);
         $template = preg_replace("/<% author %>/", $config['author'], $template);
-        $template = preg_replace("/<% gallery_root %>/", GALLERY_ROOT, $template);
+        $template = preg_replace("/<% gallery_root %>/", $uri_prefix, $template);
         $template = preg_replace("/<% images %>/", "$images", $template);
         $template = preg_replace("/<% thumbnails %>/", "$thumbnails", $template);
         $template = preg_replace("/<% breadcrumb_navigation %>/", "$breadcrumb_navigation", $template);
