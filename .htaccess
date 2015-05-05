@@ -1,6 +1,5 @@
 <IfModule mod_rewrite.c>
 	RewriteEngine on
-	RewriteBase /phototest
 	RewriteCond %{REQUEST_FILENAME} -d
 		RewriteRule ^(.*[^/])$ $1/ [R=301,L]
 	RewriteCond %{REQUEST_FILENAME} -d
